@@ -1,0 +1,336 @@
+/*
+  Enclosed Universal Notification and Alarm System EUNAS (yoo nis)
+
+  ######## ##     ## ##    ##    ###     ######  
+  ##       ##     ## ###   ##   ## ##   ##    ## 
+  ##       ##     ## ####  ##  ##   ##  ##       
+  ######   ##     ## ## ## ## ##     ##  ######  
+  ##       ##     ## ##  #### #########       ## 
+  ##       ##     ## ##   ### ##     ## ##    ## 
+  ########  #######  ##    ## ##     ##  ######  
+
+  i took a bunch of spare parts to make a timer for my coffee and laundy.
+  I didn't want an audio alarm, like the rest of my timers...and I wanted 
+  custom times for one button presses.
+  buuuuut...If I'm making something I should make it usefuller.
+  How about a weather alarm so I know when to cover my car?
+  How about a notification for my favorite streamers?
+
+  Done:
+  Buttons
+  timer
+  4 digit display
+  strip of 3 neo pixels for the buttons
+
+  todo:
+  wifi
+  Twitch
+  github
+  weather
+*/
+
+//4 digit display
+#include <TM1637Display.h>
+// Module connection pins (Digital Pins)
+#define CLK 5
+#define DIO 6
+
+//Neo Pixel LED stuff
+#include <Adafruit_NeoPixel.h>
+#ifdef __AVR__
+ #include <avr/power.h> // Required for 16 MHz Adafruit Trinket
+#endif
+
+// neo pixel data pin
+// Which pin on the Arduino is connected to the NeoPixels?
+// On a Trinket or Gemma we suggest changing this to 1:
+#define LED_PIN   14 // button strip
+// How many NeoPixels are attached to the Arduino?  Button NeoPixel Strip
+#define LED_COUNT 3  // button strip
+// Declare our NeoPixel strip object:
+Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
+
+const bool testMode = true;
+
+// button states
+int buttonStateOne = 0;  // variable for reading the pushbutton status
+int buttonStateTwo = 0;  // variable for reading the pushbutton status
+int buttonStateThree = 0;  // variable for reading the pushbutton status
+// constants won't change. They're used here to set pin numbers:
+const int buttonPinOne = 9;  // the number of the first button
+const int buttonPinTwo = 10;  // the number of the second button
+const int buttonPinThree = 11;  // the number of the third button
+const int ledPin = 13;    // the number of the SMD LED pin
+
+// timer vars
+long timerOne = 240000; //length of timer one
+long timerTwo = 2700000; //length of timer2
+//timer states
+int timerStateOne = 0;  //do we count?
+int timerStateTwo = 0;  
+int timerAlarmOne = 0;   //did we forget?
+int timerAlarmTwo = 0;
+int generalCounter = 0;
+unsigned long timExpireyOne = 0;
+unsigned long timExpireyTwo = 0;
+
+//four digit display thing stuff
+// TM1637 tm(CLK,DIO);
+TM1637Display display(CLK, DIO);
+// uint8_t blank[] = { 0x00, 0x00, 0x00, 0x00 };
+
+void setup() {
+
+  pinMode(ledPin, OUTPUT);  // initialize digital pin 13 as an output (from the blink tute)
+  digitalWrite(ledPin, LOW);    // turn the LED off by making the voltage LOW
+
+  // initialize the pushbutton pins as an inputs:
+  pinMode(buttonPinOne, INPUT);
+  pinMode(buttonPinTwo, INPUT);
+  pinMode(buttonPinThree, INPUT);
+
+  if (testMode) {
+    timerOne = 3000; //length of timer one
+    timerTwo = 5000; //length of timer2
+  }
+
+  strip.begin();            // INITIALIZE NeoPixel strip object (REQUIRED)
+  strip.show();             // Turn OFF all pixels ASAP
+  strip.setBrightness(255); // Set BRIGHTNESS to about 1/5 (max = 255)
+
+  //four digit display thing stuff
+  // uint8_t data[] = { 0xff, 0xff, 0xff, 0xff };
+  uint8_t blank[] = { 0x00, 0x00, 0x00, 0x00 };
+  display.setBrightness(0x00);
+ 
+  // All segments on
+  display.setSegments(blank);
+}
+
+void loop() {
+
+
+  //when will then be now?
+  unsigned long rightMeow = millis();
+
+  //checkbuttons
+  buttonStateOne = digitalRead(buttonPinOne);
+  buttonStateTwo = digitalRead(buttonPinTwo);
+  buttonStateThree = digitalRead(buttonPinThree);
+  // Start the coffee timer
+  if (buttonStateOne == HIGH && timerAlarmOne == 0) {
+    timerStateOne = 1;
+    timExpireyOne = rightMeow + timerOne;
+    strip.setPixelColor(0,strip.Color(0, 50, 0));
+  } else if (buttonStateOne == HIGH && timerAlarmOne == 1) {
+    strip.setPixelColor(0,strip.Color(100,100,0));
+    strip.show();
+    timerAlarmOne = 0;
+    delay(500);
+  }
+  // Start the laundry timer
+  if (buttonStateTwo == HIGH && timerAlarmTwo == 0) {
+    timerStateTwo = 1;
+    timExpireyTwo = rightMeow + timerTwo;
+    strip.setPixelColor(1,strip.Color(0, 0, 50));
+  } else if (buttonStateTwo == HIGH && timerAlarmTwo == 1) {
+    // you can reset individual alarms if they are done and multiple timers are going off.
+    strip.setPixelColor(1,strip.Color(100,100,0));
+    strip.show();
+    timerAlarmTwo = 0;
+    delay(500);
+  }
+  // Cancel or reset or something
+  if (buttonStateThree == HIGH) {
+    // Reset the states and alarms.
+    timerStateOne = 0;
+    timerStateTwo = 0;
+    timerAlarmOne = 0;
+    timerAlarmTwo = 0;
+    //Timer is running or was in alarm mode: turn off button LED
+    strip.setPixelColor(0,strip.Color(0,0,0));
+    strip.setPixelColor(1,strip.Color(0,0,0));
+    strip.setPixelColor(2,strip.Color(100,100,0));
+    // if (timerAlarmOne == 0 && timerAlarmTwo == 0){
+    //   strip.setBrightness(0xff);
+    // }
+    // Update the 4 digit display
+    uint8_t blank[] = { 0x00, 0x00, 0x00, 0x00 };
+    display.setBrightness(0x00);
+    display.setSegments(blank);
+  } else {
+    strip.setPixelColor(2,strip.Color(0,0,0));
+  }
+  strip.show();
+  updateCounters();
+
+
+
+
+
+  // unsigned long currentTime = millis();
+  // /* This is my event_1 */
+  // if ( currentTime - time_1 >= timerOne) {
+  //   Serial.print("LDR: ");
+  //   unsigned long testNum = currentTime - time_1;
+  //   Serial.println( testNum );
+  //   Serial.print("HTime: ");
+  //   // anal
+  //   // Serial.println()
+    
+  //   /* Update the timing for the next event*/
+  //   time_1 = currentTime;
+  // }
+
+  //   /* This is my event_2 */
+  // if ( currentTime - time_2 >= timerTwo) {
+
+  //   Serial.print("Temp: ");
+  //   // Serial.println( analogRead(tempSensor) );
+
+  //   /* Update the timing for the next event*/
+  //   time_2 = currentTime;
+  // }
+}
+
+void updateCounters() {
+  int newCount = 0; //the number we should be displaying:
+  // uint8_t data[] = { 0xff, 0xff, 0xff, 0xff };  //for display
+  uint8_t blankTwo[] = { 0x00, 0x00, 0x00, 0x00 };  //for display
+  //when will then be now?
+  unsigned long rightMeow = millis();
+  // We just passed the timer threshold.
+  if (timerStateOne == 1 && timExpireyOne < rightMeow) { 
+    timerAlarmOne = 1;
+    timerStateOne = 0;
+    //set the button to red
+    strip.setPixelColor(0,strip.Color(255, 0, 0));
+    strip.show();
+    //update the display
+    blankTwo[0] = display.encodeDigit(0);
+    blankTwo[1] = display.encodeDigit(0);
+    display.setBrightness(0xff);
+    // display.setSegments(blank);
+  // what if we're just still counting?
+  } else if (timerStateOne == 1 && timExpireyOne > rightMeow) {
+    if (testMode) {
+      newCount = (timExpireyOne - rightMeow)/1000;
+    } else {
+      newCount = (timExpireyOne - rightMeow)/60000;
+    }
+    blankTwo[0] = display.encodeDigit(newCount / 10 % 10);
+    blankTwo[1] = display.encodeDigit(newCount % 10);
+    // display.setBrightness(0x00);
+    // display.setSegments(blank);
+  // } else if (timerAlarmOne == 1 && timerStateOne == 0) {
+  //   // update the display
+  //   blankTwo[0] = display.encodeDigit(2);
+  //   blankTwo[1] = display.encodeDigit(2);
+  //   // display.setBrightness(0xff);
+  }
+  // if the alarm was previously just on we're going into alarm mode
+  if (timerStateTwo == 1 && timExpireyTwo < rightMeow) { 
+    timerAlarmTwo = 1;
+    timerStateTwo = 0;
+    //set the button to red
+    strip.setPixelColor(1,strip.Color(255, 0, 0));
+    // strip.show();
+    //update the display
+    blankTwo[2] = display.encodeDigit(0);
+    blankTwo[3] = display.encodeDigit(0);
+    display.setBrightness(0xff);
+    // display.setSegments(blank);
+  // what if we're just still counting?
+  } else if (timerStateTwo == 1 && timExpireyTwo > rightMeow) {
+    if (testMode) {
+      newCount = (timExpireyTwo - rightMeow)/1000;
+    } else {
+      newCount = (timExpireyTwo - rightMeow)/60000;
+    }
+    blankTwo[2] = display.encodeDigit(newCount / 10 % 10);
+    blankTwo[3] = display.encodeDigit(newCount % 10);
+    // display.setBrightness(0x00);
+  // } else if (timerAlarmTwo == 1 && timerStateTwo ==0) {
+  //   // update the display
+  //   blankTwo[2] = display.encodeDigit(1);
+  //   blankTwo[3] = display.encodeDigit(1);
+  //   display.setBrightness(0xff);
+  }
+  //if in an alarm state, keep it there
+  if (timerAlarmOne == 1) {
+    blankTwo[0] = display.encodeDigit(0);
+    blankTwo[1] = display.encodeDigit(0);
+  }
+  if (timerAlarmTwo == 1) {
+    blankTwo[2] = display.encodeDigit(0);
+    blankTwo[3] = display.encodeDigit(0);
+  }
+  // What if there is nothing to do but clean?
+  // Check for lights to be turned off.
+  if (timerStateOne == 0 && timerAlarmOne == 0) {
+    blankTwo[0] = 0x00;
+    blankTwo[1] = 0x00;
+    strip.setPixelColor(0,strip.Color(0,0,0));
+  }
+  if (timerStateTwo == 0 && timerAlarmTwo == 0) {
+    blankTwo[2] = 0x00;
+    blankTwo[3] = 0x00;
+    strip.setPixelColor(1,strip.Color(0,0,0));
+  }
+  //edge case where I get two cups of coffee during a laundry cycle
+  //this resets brightness
+  if (timerAlarmOne == 0 && timerAlarmTwo == 0) {
+    display.setBrightness(0x00);
+  }
+  strip.show(); 
+  display.setSegments(blankTwo);
+}
+
+void countDisp (int num) {}
+
+void timerCount (uint16_t ledSpot, uint32_t leColor, int leDelay) {
+  // if
+  strip.setPixelColor(ledSpot, leColor);
+  strip.show();
+}
+
+void blinkTwice() {
+  // displayNumber(2);
+  digitalWrite(ledPin, HIGH);   // turn the LED on (HIGH is the voltage level)
+  delay(200);              // wait for a second
+  digitalWrite(ledPin, LOW);    // turn the LED off by making the voltage LOW
+  delay(200);              // wait for a second
+  digitalWrite(ledPin, HIGH);   // turn the LED on (HIGH is the voltage level)
+  delay(200);              // wait for a second
+  digitalWrite(ledPin, LOW);    // turn the LED off by making the voltage LOW
+  delay(200);              // wait for a second
+  // tm.clearDisplay();
+}
+
+void blinkOnce() {
+  // displayNumber(1);
+  digitalWrite(ledPin, HIGH);   // turn the LED on (HIGH is the voltage level)
+  delay(500);              // wait for a second
+  digitalWrite(ledPin, LOW);    // turn the LED off by making the voltage LOW
+  delay(500);              // wait for a second
+  // tm.clearDisplay();
+}
+
+// void showTime() {
+//   tm.clearDisplay();
+//   displayNumber(31);
+//   delay(300);
+//   tm.display(2,13);
+//   delay(500);
+//   tm.clearDisplay();
+// }
+
+void lightOne() {
+  strip.setPixelColor(0,strip.Color(255,   0,   0));
+  strip.show();
+}
+
+void killOne() {
+  strip.setPixelColor(0,strip.Color(0,   0,   0));
+  strip.show();
+}
