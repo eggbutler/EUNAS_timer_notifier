@@ -35,22 +35,27 @@
 #define CLK 5
 #define DIO 6
 
+const bool testMode = false;
+
 //Neo Pixel LED stuff
 #include <Adafruit_NeoPixel.h>
 #ifdef __AVR__
  #include <avr/power.h> // Required for 16 MHz Adafruit Trinket
 #endif
 
-// neo pixel data pin
-// Which pin on the Arduino is connected to the NeoPixels?
-// On a Trinket or Gemma we suggest changing this to 1:
-#define LED_PIN   14 // button strip
-// How many NeoPixels are attached to the Arduino?  Button NeoPixel Strip
+// neo pixel data pin for buttons
+#define LED_PIN   15 // button strip
+// How many NeoPixels are attached buttons?  Button NeoPixel Strip
 #define LED_COUNT 3  // button strip
 // Declare our NeoPixel strip object:
 Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
 
-const bool testMode = true;
+// neo pixel data pin for notification strip
+#define LED_PIN_TWO   16 // button strip
+// How many NeoPixels are on the top?  Button NeoPixel Strip
+#define LED_COUNT_TWO 5  // button strip
+// Declare our NeoPixel strip object:
+Adafruit_NeoPixel notiStrip(LED_COUNT_TWO, LED_PIN_TWO, NEO_GRB + NEO_KHZ800);
 
 // button states
 int buttonStateOne = 0;  // variable for reading the pushbutton status
@@ -81,7 +86,7 @@ TM1637Display display(CLK, DIO);
 
 void setup() {
 
-  pinMode(ledPin, OUTPUT);  // initialize digital pin 13 as an output (from the blink tute)
+  pinMode(ledPin, OUTPUT);  // initialize digital pin 13 as an output (from the blink tutorial)
   digitalWrite(ledPin, LOW);    // turn the LED off by making the voltage LOW
 
   // initialize the pushbutton pins as an inputs:
@@ -97,6 +102,10 @@ void setup() {
   strip.begin();            // INITIALIZE NeoPixel strip object (REQUIRED)
   strip.show();             // Turn OFF all pixels ASAP
   strip.setBrightness(255); // Set BRIGHTNESS to about 1/5 (max = 255)
+
+  notiStrip.begin();            // INITIALIZE NeoPixel strip object (REQUIRED)
+  notiStrip.show();             // Turn OFF all pixels ASAP
+  notiStrip.setBrightness(255); // Set BRIGHTNESS to about 1/5 (max = 255)
 
   //four digit display thing stuff
   // uint8_t data[] = { 0xff, 0xff, 0xff, 0xff };
@@ -140,6 +149,10 @@ void loop() {
     timerAlarmTwo = 0;
     delay(500);
   }
+  //LED Test easter egg Run rainbows across all the led's
+  if (buttonStateThree == HIGH && buttonStateOne == HIGH) {
+    rainbow(8);
+  }
   // Cancel or reset or something
   if (buttonStateThree == HIGH) {
     // Reset the states and alarms.
@@ -162,11 +175,8 @@ void loop() {
     strip.setPixelColor(2,strip.Color(0,0,0));
   }
   strip.show();
+  notiStrip.show();
   updateCounters();
-
-
-
-
 
   // unsigned long currentTime = millis();
   // /* This is my event_1 */
@@ -334,3 +344,28 @@ void killOne() {
   strip.setPixelColor(0,strip.Color(0,   0,   0));
   strip.show();
 }
+
+// Rainbow cycle along whole strip. Pass delay time (in ms) between frames.
+void rainbow(int wait) {
+  // Hue of first pixel runs 5 complete loops through the color wheel.
+  // Color wheel has a range of 65536 but it's OK if we roll over, so
+  // just count from 0 to 5*65536. Adding 256 to firstPixelHue each time
+  // means we'll make 5*65536/256 = 1280 passes through this loop:
+  for(long firstPixelHue = 0; firstPixelHue < 5*65536; firstPixelHue += 256) {
+    // strip.rainbow() can take a single argument (first pixel hue) or
+    // optionally a few extras: number of rainbow repetitions (default 1),
+    // saturation and value (brightness) (both 0-255, similar to the
+    // ColorHSV() function, default 255), and a true/false flag for whether
+    // to apply gamma correction to provide 'truer' colors (default true).
+    strip.rainbow(firstPixelHue);
+    notiStrip.rainbow(firstPixelHue);
+    // Above line is equivalent to:
+    // strip.rainbow(firstPixelHue, 1, 255, 255, true);
+    strip.show(); // Update strip with new contents
+    notiStrip.show(); // Update strip with new contents
+    delay(wait);  // Pause for a moment
+  }
+  strip.clear();
+  notiStrip.clear();
+}
+
