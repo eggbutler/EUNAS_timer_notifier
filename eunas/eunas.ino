@@ -21,16 +21,33 @@
   timer
   4 digit display
   strip of 3 neo pixels for the buttons
+  wifi
+  github
 
   todo:
-  wifi
+  weather-sorta  (Still missing XML parsing and logic.)
   Twitch
-  github
-  weather
 */
 
 //4 digit display
 #include <TM1637Display.h>
+
+//Wifi and Weather
+#include <SPI.h>
+#include <WiFi101.h>
+#include "arduino_secrets.h"
+String lat = "40.927227";
+String lon = "-73.966860";
+int status = WL_IDLE_STATUS;
+char server[] = "api.openweathermap.org";
+WiFiClient client;
+
+String ssid = SECRET_SSID; //  your network SSID (name)
+String pass = SECRET_PASS;//  your network PASSWORD ()
+
+//open weather map api key
+String apiKey = SECRET_APIKEY;
+
 // Module connection pins (Digital Pins)
 #define CLK 5
 #define DIO 6
@@ -86,6 +103,12 @@ TM1637Display display(CLK, DIO);
 
 void setup() {
 
+  //Configure pins for Adafruit ATWINC1500 Feather
+  WiFi.setPins(8,7,4,2);
+
+  //Initialize serial and wait for port to open:
+  Serial.begin(9600);
+
   pinMode(ledPin, OUTPUT);  // initialize digital pin 13 as an output (from the blink tutorial)
   digitalWrite(ledPin, LOW);    // turn the LED off by making the voltage LOW
 
@@ -114,6 +137,20 @@ void setup() {
  
   // All segments on
   display.setSegments(blank);
+
+  //Start the wifi
+  Serial.print("Attempting to connect to SSID: ");
+  Serial.println(ssid);
+  status = WiFi.begin(ssid, pass);
+  if (status == WL_CONNECTED) {
+    Serial.println("crazy it worked!");
+    notiStrip.setPixelColor(4,notiStrip.Color(0,5,0));
+  } else {
+    status = WiFi.begin(ssid,pass);
+    Serial.println("NO Internet! WTF...I'm going on without it.");
+    notiStrip.setPixelColor(4,notiStrip.Color(5,0,0));
+  }
+  notiStrip.show();
 }
 
 void loop() {
@@ -152,6 +189,7 @@ void loop() {
   //LED Test easter egg Run rainbows across all the led's
   if (buttonStateThree == HIGH && buttonStateOne == HIGH) {
     rainbow(8);
+    getWeather();
   }
   // Cancel or reset or something
   if (buttonStateThree == HIGH) {
@@ -294,6 +332,16 @@ void updateCounters() {
   }
   strip.show(); 
   display.setSegments(blankTwo);
+  //check wifi
+  if (status == WL_CONNECTED) {
+    // Serial.println("crazy it worked!");
+    notiStrip.setPixelColor(4,notiStrip.Color(0,5,0));
+  } else {
+
+    // Serial.println("NO Internet! WTF...I'm going on without it.");
+    notiStrip.setPixelColor(4,notiStrip.Color(5,0,0));
+  }
+  notiStrip.show();
 }
 
 void countDisp (int num) {}
@@ -369,3 +417,33 @@ void rainbow(int wait) {
   notiStrip.clear();
 }
 
+void getWeather() {
+  Serial.println("\nStarting connection to server...");
+  // if you get a connection, report back via serial:
+  if (client.connect(server, 80)) {
+    Serial.println("connected to server");
+    // Make a HTTP request:
+    client.print("GET /data/2.5/forecast?");
+    // client.print("q="+location);
+    client.print("lat="+lat);
+    client.print("&lon="+lon);
+    client.print("&appid="+apiKey);
+    client.print("&mode=xml");
+    client.println("&cnt=2");
+    // client.println("&units=standard");
+    client.println("Host: api.openweathermap.org");
+    client.println("Connection: close");
+    client.println();
+  } else {
+    Serial.println("unable to connect");
+  }
+
+  delay(1000);
+  String line = "";
+  while (client.connected()) {
+    line = client.readStringUntil('\n');
+    Serial.println(line);
+    line = client.readStringUntil('\n');
+    Serial.println(line);
+  }
+}
