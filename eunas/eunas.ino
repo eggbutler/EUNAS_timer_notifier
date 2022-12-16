@@ -167,7 +167,7 @@ void loop() {
   if (buttonStateOne == HIGH && timerAlarmOne == 0) {
     timerStateOne = 1;
     timExpireyOne = rightMeow + timerOne;
-    strip.setPixelColor(0,strip.Color(0, 50, 0));
+    strip.setPixelColor(0,strip.Color(0, 25, 0));
   } else if (buttonStateOne == HIGH && timerAlarmOne == 1) {
     strip.setPixelColor(0,strip.Color(100,100,0));
     strip.show();
@@ -178,7 +178,7 @@ void loop() {
   if (buttonStateTwo == HIGH && timerAlarmTwo == 0) {
     timerStateTwo = 1;
     timExpireyTwo = rightMeow + timerTwo;
-    strip.setPixelColor(1,strip.Color(0, 0, 50));
+    strip.setPixelColor(1,strip.Color(0, 0, 25));
   } else if (buttonStateTwo == HIGH && timerAlarmTwo == 1) {
     // you can reset individual alarms if they are done and multiple timers are going off.
     strip.setPixelColor(1,strip.Color(100,100,0));
@@ -445,5 +445,9 @@ void getWeather() {
     Serial.println(line);
     line = client.readStringUntil('\n');
     Serial.println(line);
+    line = client.readStringUntil('\n');
+    Serial.println(line);
   }
+  Serial.print("Goodbye!");
+  Serial.println("...go away\n");
 }
