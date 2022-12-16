@@ -33,7 +33,7 @@
 #include <TM1637Display.h>
 
 //Wifi and Weather
-#include <SPI.h>
+// #include <SPI.h>
 #include <WiFi101.h>
 #include "arduino_secrets.h"
 String lat = "40.927227";
@@ -88,11 +88,11 @@ const int ledPin = 13;    // the number of the SMD LED pin
 long timerOne = 240000; //length of timer one
 long timerTwo = 2700000; //length of timer2
 //timer states
-int timerStateOne = 0;  //do we count?
-int timerStateTwo = 0;  
-int timerAlarmOne = 0;   //did we forget?
-int timerAlarmTwo = 0;
-int generalCounter = 0;
+bool timerStateOne = false;  //do we count?
+bool timerStateTwo = false;  
+bool timerAlarmOne = false;   //did we forget?
+bool timerAlarmTwo = false;
+// int generalCounter = 0;
 unsigned long timExpireyOne = 0;
 unsigned long timExpireyTwo = 0;
 
@@ -147,7 +147,7 @@ void setup() {
     notiStrip.setPixelColor(4,notiStrip.Color(0,5,0));
   } else {
     status = WiFi.begin(ssid,pass);
-    Serial.println("NO Internet! WTF...I'm going on without it.");
+    Serial.println("No Internet! WTF...I'm going on without it.");
     notiStrip.setPixelColor(4,notiStrip.Color(5,0,0));
   }
   notiStrip.show();
@@ -155,193 +155,188 @@ void setup() {
 
 void loop() {
 
-
   //when will then be now?
   unsigned long rightMeow = millis();
 
-  //checkbuttons
+  checkButtons(rightMeow);
+
+  checkAlarms(rightMeow);
+
+  updateLights(rightMeow);
+
+}
+
+void checkButtons (unsigned long rightMeow) {
+
+  //read the buttons
   buttonStateOne = digitalRead(buttonPinOne);
   buttonStateTwo = digitalRead(buttonPinTwo);
   buttonStateThree = digitalRead(buttonPinThree);
+
   // Start the coffee timer
-  if (buttonStateOne == HIGH && timerAlarmOne == 0) {
-    timerStateOne = 1;
+  if (buttonStateOne == HIGH && timerAlarmOne == false) {
+    // Start timer one
+    timerStateOne = true;
     timExpireyOne = rightMeow + timerOne;
-    strip.setPixelColor(0,strip.Color(0, 25, 0));
-  } else if (buttonStateOne == HIGH && timerAlarmOne == 1) {
-    strip.setPixelColor(0,strip.Color(100,100,0));
-    strip.show();
-    timerAlarmOne = 0;
+    // strip.setPixelColor(0,strip.Color(0, 25, 0));
+  } else if (buttonStateOne == HIGH && timerAlarmOne == true) {
+    //cancel timer one
+    // strip.setPixelColor(0,strip.Color(100,100,0));
+    // strip.show();
+    timerAlarmOne = false;
     delay(500);
   }
   // Start the laundry timer
-  if (buttonStateTwo == HIGH && timerAlarmTwo == 0) {
-    timerStateTwo = 1;
+  if (buttonStateTwo == HIGH && timerAlarmTwo == false) {
+    timerStateTwo = true;
     timExpireyTwo = rightMeow + timerTwo;
-    strip.setPixelColor(1,strip.Color(0, 0, 25));
-  } else if (buttonStateTwo == HIGH && timerAlarmTwo == 1) {
+    // strip.setPixelColor(1,strip.Color(0, 0, 25));
+  } else if (buttonStateTwo == HIGH && timerAlarmTwo == true) {
     // you can reset individual alarms if they are done and multiple timers are going off.
-    strip.setPixelColor(1,strip.Color(100,100,0));
-    strip.show();
-    timerAlarmTwo = 0;
+    // strip.setPixelColor(1,strip.Color(100,100,0));
+    // strip.show();
+    timerAlarmTwo = false;
     delay(500);
   }
   //LED Test easter egg Run rainbows across all the led's
   if (buttonStateThree == HIGH && buttonStateOne == HIGH) {
     rainbow(8);
-    getWeather();
+    // getWeather();
   }
   // Cancel or reset or something
   if (buttonStateThree == HIGH) {
-    // Reset the states and alarms.
-    timerStateOne = 0;
-    timerStateTwo = 0;
-    timerAlarmOne = 0;
-    timerAlarmTwo = 0;
-    //Timer is running or was in alarm mode: turn off button LED
-    strip.setPixelColor(0,strip.Color(0,0,0));
-    strip.setPixelColor(1,strip.Color(0,0,0));
-    strip.setPixelColor(2,strip.Color(100,100,0));
-    // if (timerAlarmOne == 0 && timerAlarmTwo == 0){
-    //   strip.setBrightness(0xff);
-    // }
-    // Update the 4 digit display
-    uint8_t blank[] = { 0x00, 0x00, 0x00, 0x00 };
-    display.setBrightness(0x00);
-    display.setSegments(blank);
+    cancelReset();
   } else {
     strip.setPixelColor(2,strip.Color(0,0,0));
+    strip.show();
   }
-  strip.show();
-  notiStrip.show();
-  updateCounters();
-
-  // unsigned long currentTime = millis();
-  // /* This is my event_1 */
-  // if ( currentTime - time_1 >= timerOne) {
-  //   Serial.print("LDR: ");
-  //   unsigned long testNum = currentTime - time_1;
-  //   Serial.println( testNum );
-  //   Serial.print("HTime: ");
-  //   // anal
-  //   // Serial.println()
-    
-  //   /* Update the timing for the next event*/
-  //   time_1 = currentTime;
-  // }
-
-  //   /* This is my event_2 */
-  // if ( currentTime - time_2 >= timerTwo) {
-
-  //   Serial.print("Temp: ");
-  //   // Serial.println( analogRead(tempSensor) );
-
-  //   /* Update the timing for the next event*/
-  //   time_2 = currentTime;
-  // }
 }
 
-void updateCounters() {
-  int newCount = 0; //the number we should be displaying:
+void cancelReset () {
+  // Reset the states and alarms.
+  timerStateOne = false;
+  timerStateTwo = false;
+  timerAlarmOne = false;
+  timerAlarmTwo = false;
+  //Timer is running or was in alarm mode: turn off button LED
+  strip.setPixelColor(0,strip.Color(0,0,0));
+  strip.setPixelColor(1,strip.Color(0,0,0));
+  strip.setPixelColor(2,strip.Color(100,100,0));
+  // Update the 4 digit display
+  uint8_t blank[] = { 0x00, 0x00, 0x00, 0x00 };
+  display.setBrightness(0x00);
+  display.setSegments(blank);
+  strip.show();
+}
+
+void checkAlarms (unsigned long rightMeow) {
+  // int newCount = 0; //the number we should be displaying:
+  // We just passed the timer threshold.
+  if (timerStateOne == true && timExpireyOne < rightMeow) { 
+    timerAlarmOne = true;
+    timerStateOne = false;
+  }
+  // if the alarm was previously just on we're going into alarm mode
+  if (timerStateTwo == true && timExpireyTwo < rightMeow) { 
+    timerAlarmTwo = true;
+    timerStateTwo = false;
+  }
+}
+
+void updateLights(unsigned long rightMeow) {
+  int newCountOne = 0; //the number we should be displaying:
+  int newCountTwo = 0; //the number we should be displaying:
+  if (testMode) {
+    newCountOne = (timExpireyOne - rightMeow)/1000;
+    newCountTwo = (timExpireyTwo - rightMeow)/1000;
+  } else {
+    newCountOne = (timExpireyOne - rightMeow)/60000;
+    newCountTwo = (timExpireyTwo - rightMeow)/60000;
+  }
+  // int newCountOne = (timExpireyOne - rightMeow)/1000; // (seconds) the number we should be displaying:
+  // int newCountTwo = (timExpireyTwo - rightMeow)/1000; // (seconds) the number we should be displaying:
   // uint8_t data[] = { 0xff, 0xff, 0xff, 0xff };  //for display
   uint8_t blankTwo[] = { 0x00, 0x00, 0x00, 0x00 };  //for display
-  //when will then be now?
-  unsigned long rightMeow = millis();
-  // We just passed the timer threshold.
-  if (timerStateOne == 1 && timExpireyOne < rightMeow) { 
-    timerAlarmOne = 1;
-    timerStateOne = 0;
-    //set the button to red
+
+  // try populating the active slots on the display.
+  // if (timerStateTwo || timerAlarmTwo) {
+    //if timer two is doing anything: populate timer one numbers
+    if (timerStateOne) {
+      blankTwo[0] = display.encodeDigit(newCountOne / 10 % 10);
+      blankTwo[1] = display.encodeDigit((newCountOne % 10) + 1);
+      strip.setPixelColor(0,strip.Color(0,25,0));
+    }
+  // }
+  // if (timerStateOne || timerAlarmOne) {
+    // if timer one is busy, populate only the right side.
+    if (timerStateTwo) {
+      blankTwo[2] = display.encodeDigit(newCountTwo / 10 % 10);
+      blankTwo[3] = display.encodeDigit((newCountTwo % 10) + 1);
+      strip.setPixelColor(1,strip.Color(0,0,25));
+    }
+  // }
+
+  // Time one update
+  if (timerAlarmOne) { //Timer is in alarm mode 
+    //set the first button to red
     strip.setPixelColor(0,strip.Color(255, 0, 0));
-    strip.show();
     //update the display
     blankTwo[0] = display.encodeDigit(0);
     blankTwo[1] = display.encodeDigit(0);
-    display.setBrightness(0xff);
-    // display.setSegments(blank);
+  } 
   // what if we're just still counting?
-  } else if (timerStateOne == 1 && timExpireyOne > rightMeow) {
-    if (testMode) {
-      newCount = (timExpireyOne - rightMeow)/1000;
-    } else {
-      newCount = (timExpireyOne - rightMeow)/60000;
-    }
-    blankTwo[0] = display.encodeDigit(newCount / 10 % 10);
-    blankTwo[1] = display.encodeDigit(newCount % 10);
-    // display.setBrightness(0x00);
-    // display.setSegments(blank);
-  // } else if (timerAlarmOne == 1 && timerStateOne == 0) {
-  //   // update the display
-  //   blankTwo[0] = display.encodeDigit(2);
-  //   blankTwo[1] = display.encodeDigit(2);
-  //   // display.setBrightness(0xff);
-  }
-  // if the alarm was previously just on we're going into alarm mode
-  if (timerStateTwo == 1 && timExpireyTwo < rightMeow) { 
-    timerAlarmTwo = 1;
-    timerStateTwo = 0;
+  if (timerAlarmTwo) { // Timer 2 is alarm state
     //set the button to red
     strip.setPixelColor(1,strip.Color(255, 0, 0));
     // strip.show();
     //update the display
     blankTwo[2] = display.encodeDigit(0);
     blankTwo[3] = display.encodeDigit(0);
-    display.setBrightness(0xff);
     // display.setSegments(blank);
-  // what if we're just still counting?
-  } else if (timerStateTwo == 1 && timExpireyTwo > rightMeow) {
-    if (testMode) {
-      newCount = (timExpireyTwo - rightMeow)/1000;
-    } else {
-      newCount = (timExpireyTwo - rightMeow)/60000;
-    }
-    blankTwo[2] = display.encodeDigit(newCount / 10 % 10);
-    blankTwo[3] = display.encodeDigit(newCount % 10);
-    // display.setBrightness(0x00);
-  // } else if (timerAlarmTwo == 1 && timerStateTwo ==0) {
-  //   // update the display
-  //   blankTwo[2] = display.encodeDigit(1);
-  //   blankTwo[3] = display.encodeDigit(1);
-  //   display.setBrightness(0xff);
-  }
-  //if in an alarm state, keep it there
-  if (timerAlarmOne == 1) {
-    blankTwo[0] = display.encodeDigit(0);
-    blankTwo[1] = display.encodeDigit(0);
-  }
-  if (timerAlarmTwo == 1) {
-    blankTwo[2] = display.encodeDigit(0);
-    blankTwo[3] = display.encodeDigit(0);
-  }
-  // What if there is nothing to do but clean?
-  // Check for lights to be turned off.
-  if (timerStateOne == 0 && timerAlarmOne == 0) {
-    blankTwo[0] = 0x00;
-    blankTwo[1] = 0x00;
-    strip.setPixelColor(0,strip.Color(0,0,0));
-  }
-  if (timerStateTwo == 0 && timerAlarmTwo == 0) {
-    blankTwo[2] = 0x00;
-    blankTwo[3] = 0x00;
+  } // else if (! timerStateTwo && ! timerAlarmTwo) { //check if timer two is doing something
+  //   if (timerStateOne) {  //that means timer state one can hog the display.
+  //     //hog the display:
+  //     blankTwo[0] = display.encodeDigit(newCountOne / 600 % 10);
+  //     blankTwo[1] = display.encodeDigit(newCountOne / 60 % 10);
+  //     blankTwo[2] = display.encodeDigit(newCountOne / 10 % 10);
+  //     blankTwo[3] = display.encodeDigit((newCountOne % 10) + 1);      
+  //   }
+  // } else if (! timerStateOne && ! timerAlarmOne) { //check if timer one is doing something
+  //   if (timerStateTwo) {  //that means timer state two can hog the display.
+  //     //hog the display:
+  //     blankTwo[0] = display.encodeDigit(newCountTwo / 10 % 10);
+  //     blankTwo[1] = display.encodeDigit((newCountTwo % 10) + 1);
+  //     blankTwo[2] = display.encodeDigit(newCountTwo / 10 % 10);
+  //     blankTwo[3] = display.encodeDigit((newCountTwo % 10) + 1);
+  //   }
+  // }
+
+  if ( ! timerStateTwo && ! timerAlarmTwo ) {
     strip.setPixelColor(1,strip.Color(0,0,0));
+  } 
+  if ( ! timerStateOne && ! timerAlarmOne ) {
+    strip.setPixelColor(0,strip.Color(0,0,0));
   }
   //edge case where I get two cups of coffee during a laundry cycle
   //this resets brightness and alarm status for the top leds
-  if (timerAlarmOne == 0 && timerAlarmTwo == 0) {
+  if ( ! timerAlarmOne && timerAlarmTwo == false) {
+    // reset brightness to low
     display.setBrightness(0x00);
+    // Turn off the top lights
     notiStrip.setPixelColor(0,(0,0,0));
     notiStrip.setPixelColor(1,(0,0,0));
     notiStrip.setPixelColor(2,(0,0,0));
     notiStrip.setPixelColor(3,(0,0,0));
     notiStrip.setPixelColor(4,(0,0,0));
   }
-  if (timerAlarmOne == 1 || timerAlarmTwo == 1) {
+  if (timerAlarmOne == true || timerAlarmTwo == true) {
     //light the top lights:
     notiStrip.setPixelColor(0,strip.Color(255,0,0));
     notiStrip.setPixelColor(1,strip.Color(255,0,0));
     notiStrip.setPixelColor(2,strip.Color(255,0,0));
     notiStrip.setPixelColor(3,strip.Color(255,0,0));
-    notiStrip.setPixelColor(4,strip.Color(255,0,0));
+    // notiStrip.setPixelColor(4,strip.Color(255,0,0));
+    display.setBrightness(0xff);
   }
   //check wifi
   if (status == WL_CONNECTED) {
@@ -357,54 +352,6 @@ void updateCounters() {
   notiStrip.show();
 }
 
-void countDisp (int num) {}
-
-void timerCount (uint16_t ledSpot, uint32_t leColor, int leDelay) {
-  // if
-  strip.setPixelColor(ledSpot, leColor);
-  strip.show();
-}
-
-void blinkTwice() {
-  // displayNumber(2);
-  digitalWrite(ledPin, HIGH);   // turn the LED on (HIGH is the voltage level)
-  delay(200);              // wait for a second
-  digitalWrite(ledPin, LOW);    // turn the LED off by making the voltage LOW
-  delay(200);              // wait for a second
-  digitalWrite(ledPin, HIGH);   // turn the LED on (HIGH is the voltage level)
-  delay(200);              // wait for a second
-  digitalWrite(ledPin, LOW);    // turn the LED off by making the voltage LOW
-  delay(200);              // wait for a second
-  // tm.clearDisplay();
-}
-
-void blinkOnce() {
-  // displayNumber(1);
-  digitalWrite(ledPin, HIGH);   // turn the LED on (HIGH is the voltage level)
-  delay(500);              // wait for a second
-  digitalWrite(ledPin, LOW);    // turn the LED off by making the voltage LOW
-  delay(500);              // wait for a second
-  // tm.clearDisplay();
-}
-
-// void showTime() {
-//   tm.clearDisplay();
-//   displayNumber(31);
-//   delay(300);
-//   tm.display(2,13);
-//   delay(500);
-//   tm.clearDisplay();
-// }
-
-void lightOne() {
-  strip.setPixelColor(0,strip.Color(255,   0,   0));
-  strip.show();
-}
-
-void killOne() {
-  strip.setPixelColor(0,strip.Color(0,   0,   0));
-  strip.show();
-}
 
 // Rainbow cycle along whole strip. Pass delay time (in ms) between frames.
 void rainbow(int wait) {
@@ -464,3 +411,53 @@ void getWeather() {
   Serial.print("Goodbye!");
   Serial.println("...go away\n");
 }
+
+
+// void countDisp (int num) {}
+
+// void timerCount (uint16_t ledSpot, uint32_t leColor, int leDelay) {
+//   // if
+//   strip.setPixelColor(ledSpot, leColor);
+//   strip.show();
+// }
+
+// void blinkTwice() {
+//   // displayNumber(2);
+//   digitalWrite(ledPin, HIGH);   // turn the LED on (HIGH is the voltage level)
+//   delay(200);              // wait for a second
+//   digitalWrite(ledPin, LOW);    // turn the LED off by making the voltage LOW
+//   delay(200);              // wait for a second
+//   digitalWrite(ledPin, HIGH);   // turn the LED on (HIGH is the voltage level)
+//   delay(200);              // wait for a second
+//   digitalWrite(ledPin, LOW);    // turn the LED off by making the voltage LOW
+//   delay(200);              // wait for a second
+//   // tm.clearDisplay();
+// }
+
+// void blinkOnce() {
+//   // displayNumber(1);
+//   digitalWrite(ledPin, HIGH);   // turn the LED on (HIGH is the voltage level)
+//   delay(500);              // wait for a second
+//   digitalWrite(ledPin, LOW);    // turn the LED off by making the voltage LOW
+//   delay(500);              // wait for a second
+//   // tm.clearDisplay();
+// }
+
+// void showTime() {
+//   tm.clearDisplay();
+//   displayNumber(31);
+//   delay(300);
+//   tm.display(2,13);
+//   delay(500);
+//   tm.clearDisplay();
+// }
+
+// void lightOne() {
+//   strip.setPixelColor(0,strip.Color(255,   0,   0));
+//   strip.show();
+// }
+
+// void killOne() {
+//   strip.setPixelColor(0,strip.Color(0,   0,   0));
+//   strip.show();
+// }
