@@ -189,7 +189,7 @@ void loop() {
   //LED Test easter egg Run rainbows across all the led's
   if (buttonStateThree == HIGH && buttonStateOne == HIGH) {
     rainbow(8);
-    getWeather();
+    // getWeather();
   }
   // Cancel or reset or something
   if (buttonStateThree == HIGH) {
