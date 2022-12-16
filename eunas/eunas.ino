@@ -42,8 +42,8 @@ int status = WL_IDLE_STATUS;
 char server[] = "api.openweathermap.org";
 WiFiClient client;
 
-String ssid = SECRET_SSID; //  your network SSID (name)
-String pass = SECRET_PASS;//  your network PASSWORD ()
+char ssid[] = SECRET_SSID; //  your network SSID (name)
+char pass[] = SECRET_PASS;//  your network PASSWORD ()
 
 //open weather map api key
 String apiKey = SECRET_APIKEY;
@@ -326,12 +326,23 @@ void updateCounters() {
     strip.setPixelColor(1,strip.Color(0,0,0));
   }
   //edge case where I get two cups of coffee during a laundry cycle
-  //this resets brightness
+  //this resets brightness and alarm status for the top leds
   if (timerAlarmOne == 0 && timerAlarmTwo == 0) {
     display.setBrightness(0x00);
+    notiStrip.setPixelColor(0,(0,0,0));
+    notiStrip.setPixelColor(1,(0,0,0));
+    notiStrip.setPixelColor(2,(0,0,0));
+    notiStrip.setPixelColor(3,(0,0,0));
+    notiStrip.setPixelColor(4,(0,0,0));
   }
-  strip.show(); 
-  display.setSegments(blankTwo);
+  if (timerAlarmOne == 1 || timerAlarmTwo == 1) {
+    //light the top lights:
+    notiStrip.setPixelColor(0,strip.Color(255,0,0));
+    notiStrip.setPixelColor(1,strip.Color(255,0,0));
+    notiStrip.setPixelColor(2,strip.Color(255,0,0));
+    notiStrip.setPixelColor(3,strip.Color(255,0,0));
+    notiStrip.setPixelColor(4,strip.Color(255,0,0));
+  }
   //check wifi
   if (status == WL_CONNECTED) {
     // Serial.println("crazy it worked!");
@@ -341,6 +352,8 @@ void updateCounters() {
     // Serial.println("NO Internet! WTF...I'm going on without it.");
     notiStrip.setPixelColor(4,notiStrip.Color(5,0,0));
   }
+  display.setSegments(blankTwo);
+  strip.show(); 
   notiStrip.show();
 }
 
