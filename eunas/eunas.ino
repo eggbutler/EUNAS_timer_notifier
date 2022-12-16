@@ -296,16 +296,12 @@ void buildDisplay() {
       blankTwo[1] = display.encodeDigit(newCountOne / 60 % 10);
       Serial.println("'bongo'");
     }
-    // strip.setPixelColor(0,strip.Color(0,25,0));
   }
 
   if (timerAlarmOne) { //Timer is in alarm mode 
-    //set the first button to red
-    // strip.setPixelColor(0,strip.Color(255, 0, 0));
     //update the display
     blankTwo[0] = display.encodeDigit(0);
     blankTwo[1] = display.encodeDigit(0);
-  // what if we're just still counting?
   }
 
   if (timerStateTwo) {
@@ -316,18 +312,12 @@ void buildDisplay() {
       blankTwo[2] = display.encodeDigit(newCountTwo / 600 % 10);
       blankTwo[3] = display.encodeDigit(newCountTwo / 60 % 10);
     }
-    // strip.setPixelColor(1,strip.Color(0,0,25));
-    // display.setSegments(blank);
   }
 
   if (timerAlarmTwo) { // Timer 2 is alarm state
-    //set the button to red
-    // strip.setPixelColor(1,strip.Color(255, 0, 0));
-    // strip.show();
     //update the display
     blankTwo[2] = display.encodeDigit(0);
     blankTwo[3] = display.encodeDigit(0);
-    // display.setSegments(blank);
   }
   display.setSegments(blankTwo);
   // strip.show();
@@ -377,7 +367,6 @@ void updateLights() {
   strip.show(); 
   notiStrip.show();
 }
-
 
 // Rainbow cycle along whole strip. Pass delay time (in ms) between frames.
 void rainbow(int wait) {
@@ -437,53 +426,3 @@ void getWeather() {
   Serial.print("Goodbye!");
   Serial.println("...go away\n");
 }
-
-
-// void countDisp (int num) {}
-
-// void timerCount (uint16_t ledSpot, uint32_t leColor, int leDelay) {
-//   // if
-//   strip.setPixelColor(ledSpot, leColor);
-//   strip.show();
-// }
-
-// void blinkTwice() {
-//   // displayNumber(2);
-//   digitalWrite(ledPin, HIGH);   // turn the LED on (HIGH is the voltage level)
-//   delay(200);              // wait for a second
-//   digitalWrite(ledPin, LOW);    // turn the LED off by making the voltage LOW
-//   delay(200);              // wait for a second
-//   digitalWrite(ledPin, HIGH);   // turn the LED on (HIGH is the voltage level)
-//   delay(200);              // wait for a second
-//   digitalWrite(ledPin, LOW);    // turn the LED off by making the voltage LOW
-//   delay(200);              // wait for a second
-//   // tm.clearDisplay();
-// }
-
-// void blinkOnce() {
-//   // displayNumber(1);
-//   digitalWrite(ledPin, HIGH);   // turn the LED on (HIGH is the voltage level)
-//   delay(500);              // wait for a second
-//   digitalWrite(ledPin, LOW);    // turn the LED off by making the voltage LOW
-//   delay(500);              // wait for a second
-//   // tm.clearDisplay();
-// }
-
-// void showTime() {
-//   tm.clearDisplay();
-//   displayNumber(31);
-//   delay(300);
-//   tm.display(2,13);
-//   delay(500);
-//   tm.clearDisplay();
-// }
-
-// void lightOne() {
-//   strip.setPixelColor(0,strip.Color(255,   0,   0));
-//   strip.show();
-// }
-
-// void killOne() {
-//   strip.setPixelColor(0,strip.Color(0,   0,   0));
-//   strip.show();
-// }
