@@ -209,28 +209,24 @@ void checkButtons () {
   }
   // Cancel or reset or something
   if (buttonStateThree == HIGH) {
-    cancelReset();
+    // Reset the states and alarms.
+    timerStateOne = false;
+    timerStateTwo = false;
+    timerAlarmOne = false;
+    timerAlarmTwo = false;
+    //Timer is running or was in alarm mode: turn off button LED
+    strip.setPixelColor(0,strip.Color(0,0,0));
+    strip.setPixelColor(1,strip.Color(0,0,0));
+    strip.setPixelColor(2,strip.Color(100,100,0));
+    // Update the 4 digit display
+    uint8_t blank[] = { 0x00, 0x00, 0x00, 0x00 };
+    display.setBrightness(0x00);
+    display.setSegments(blank);
+    strip.show();
   } else {
     strip.setPixelColor(2,strip.Color(0,0,0));
     strip.show();
   }
-}
-
-void cancelReset () {
-  // Reset the states and alarms.
-  timerStateOne = false;
-  timerStateTwo = false;
-  timerAlarmOne = false;
-  timerAlarmTwo = false;
-  //Timer is running or was in alarm mode: turn off button LED
-  strip.setPixelColor(0,strip.Color(0,0,0));
-  strip.setPixelColor(1,strip.Color(0,0,0));
-  strip.setPixelColor(2,strip.Color(100,100,0));
-  // Update the 4 digit display
-  uint8_t blank[] = { 0x00, 0x00, 0x00, 0x00 };
-  display.setBrightness(0x00);
-  display.setSegments(blank);
-  strip.show();
 }
 
 void checkAlarms () {
