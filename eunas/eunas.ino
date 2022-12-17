@@ -29,6 +29,8 @@
   Twitch
 */
 
+const bool testMode = false;
+
 //4 digit display
 #include <TM1637Display.h>
 //four digit display thing stuff
@@ -39,29 +41,26 @@
 TM1637Display display(CLK, DIO);
 // uint8_t blank[] = { 0x00, 0x00, 0x00, 0x00 };
 
-
-//Wifi and Weather
+//Wifi
 // #include <SPI.h>
 #include <WiFi101.h>
 #include "arduino_secrets.h"
-String lat = "40.927227";
-String lon = "-73.966860";
 int status = WL_IDLE_STATUS;
-char server[] = "api.openweathermap.org";
 WiFiClient client;
-
 char ssid[] = SECRET_SSID; //  your network SSID (name)
 char pass[] = SECRET_PASS;//  your network PASSWORD ()
 
+//weather stuff
+char server[] = "api.openweathermap.org";
 //open weather map api key
 String apiKey = SECRET_APIKEY;
-
-const bool testMode = false;
+String lat = "40.927227";
+String lon = "-73.966860";
 
 //Neo Pixel LED stuff
 #include <Adafruit_NeoPixel.h>
 #ifdef __AVR__
- #include <avr/power.h> // Required for 16 MHz Adafruit Trinket
+// #include <avr/power.h> // Required for 16 MHz Adafruit Trinket
 #endif
 
 // neo pixel data pin for buttons
@@ -97,10 +96,9 @@ bool timerStateTwo = false;
 bool timerAlarmOne = false;   //did we forget?
 bool timerAlarmTwo = false;
 // int generalCounter = 0;
-unsigned long timExpireyOne = 0;
-unsigned long timExpireyTwo = 0;
+unsigned long timExpireyOne;
+unsigned long timExpireyTwo;
 unsigned long rightMeow;
-
 
 void setup() {
 
@@ -252,6 +250,8 @@ void checkAlarms () {
 void updateDisplay() {
   int newCountOne = (timExpireyOne - rightMeow)/1000; // (seconds) the number we should be displaying:
   int newCountTwo = (timExpireyTwo - rightMeow)/1000; // (seconds) the number we should be displaying:
+  //make a piecemeal display
+  uint8_t blankTwo[] = { 0x00, 0x00, 0x00, 0x00 };  //for display
 
   //we have a disp hog:
   if ((timerStateOne || timerAlarmOne) != (timerStateTwo || timerAlarmTwo)){
@@ -273,54 +273,41 @@ void updateDisplay() {
     } 
   } else {
     // populate it individually:
-    buildDisplay();
-  }
-}
-
-void buildDisplay() {
-  int newCountOne = (timExpireyOne - rightMeow)/1000; // (seconds) the number we should be displaying:
-  int newCountTwo = (timExpireyTwo - rightMeow)/1000; // (seconds) the number we should be displaying:
-  //make a piecemeal display
-  uint8_t blankTwo[] = { 0x00, 0x00, 0x00, 0x00 };  //for display
-
-  if (timerStateOne) {
-    // if we have over a minute left report the minutes...else seconds
-    if (newCountOne < 60) { 
-      // report last two digits
-      blankTwo[0] = display.encodeDigit(newCountOne / 10 % 10);
-      blankTwo[1] = display.encodeDigit(newCountOne % 10);
-      Serial.println("'bingo'");
-    } else {
-      //report tens of minutes and minutes
-      blankTwo[0] = display.encodeDigit(newCountOne / 600 % 10);
-      blankTwo[1] = display.encodeDigit(newCountOne / 60 % 10);
-      Serial.println("'bongo'");
+    if (timerStateOne) {
+      // if we have over a minute left report the minutes...else seconds
+      if (newCountOne < 60) { 
+        // report last two digits
+        blankTwo[0] = display.encodeDigit(newCountOne / 10 % 10);
+        blankTwo[1] = display.encodeDigit(newCountOne % 10);
+        Serial.println("'bingo'");
+      } else {
+        //report tens of minutes and minutes
+        blankTwo[0] = display.encodeDigit(newCountOne / 600 % 10);
+        blankTwo[1] = display.encodeDigit(newCountOne / 60 % 10);
+        Serial.println("'bongo'");
+      }
     }
-  }
-
-  if (timerAlarmOne) { //Timer is in alarm mode 
-    //update the display
-    blankTwo[0] = display.encodeDigit(0);
-    blankTwo[1] = display.encodeDigit(0);
-  }
-
-  if (timerStateTwo) {
-    if (newCountTwo < 60) {
-      blankTwo[2] = display.encodeDigit(newCountTwo / 10 % 10);
-      blankTwo[3] = display.encodeDigit(newCountTwo % 10);
-    } else {
-      blankTwo[2] = display.encodeDigit(newCountTwo / 600 % 10);
-      blankTwo[3] = display.encodeDigit(newCountTwo / 60 % 10);
+    if (timerAlarmOne) { //Timer is in alarm mode 
+      //update the display
+      blankTwo[0] = display.encodeDigit(0);
+      blankTwo[1] = display.encodeDigit(0);
     }
+    if (timerStateTwo) {
+      if (newCountTwo < 60) {
+        blankTwo[2] = display.encodeDigit(newCountTwo / 10 % 10);
+        blankTwo[3] = display.encodeDigit(newCountTwo % 10);
+      } else {
+        blankTwo[2] = display.encodeDigit(newCountTwo / 600 % 10);
+        blankTwo[3] = display.encodeDigit(newCountTwo / 60 % 10);
+      }
+    }
+    if (timerAlarmTwo) { // Timer 2 is alarm state
+      //update the display
+      blankTwo[2] = display.encodeDigit(0);
+      blankTwo[3] = display.encodeDigit(0);
+    }
+    display.setSegments(blankTwo);
   }
-
-  if (timerAlarmTwo) { // Timer 2 is alarm state
-    //update the display
-    blankTwo[2] = display.encodeDigit(0);
-    blankTwo[3] = display.encodeDigit(0);
-  }
-  display.setSegments(blankTwo);
-  // strip.show();
 }
 
 void updateLights() {
