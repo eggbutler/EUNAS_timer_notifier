@@ -37,9 +37,7 @@ const bool testMode = false;
 // Module connection pins (Digital Pins)
 #define CLK 5
 #define DIO 6
-// TM1637 tm(CLK,DIO);
 TM1637Display display(CLK, DIO);
-// uint8_t blank[] = { 0x00, 0x00, 0x00, 0x00 };
 
 //Wifi
 // #include <SPI.h>
@@ -59,16 +57,13 @@ String lon = "-73.966860";
 
 //Neo Pixel LED stuff
 #include <Adafruit_NeoPixel.h>
-#ifdef __AVR__
-// #include <avr/power.h> // Required for 16 MHz Adafruit Trinket
-#endif
 
 // neo pixel data pin for buttons
 #define LED_PIN   15 // button strip
 // How many NeoPixels are attached buttons?  Button NeoPixel Strip
 #define LED_COUNT 3  // button strip
 // Declare our NeoPixel strip object:
-Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel buttStrip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
 
 // neo pixel data pin for notification strip
 #define LED_PIN_TWO   16 // button strip
@@ -77,7 +72,7 @@ Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
 // Declare our NeoPixel strip object:
 Adafruit_NeoPixel notiStrip(LED_COUNT_TWO, LED_PIN_TWO, NEO_GRB + NEO_KHZ800);
 
-// button states
+// button states and stuff
 int buttonStateOne = 0;  // variable for reading the pushbutton status
 int buttonStateTwo = 0;  // variable for reading the pushbutton status
 int buttonStateThree = 0;  // variable for reading the pushbutton status
@@ -121,9 +116,9 @@ void setup() {
     timerTwo = 14000; //length of timer2
   }
 
-  strip.begin();            // INITIALIZE NeoPixel strip object (REQUIRED)
-  strip.show();             // Turn OFF all pixels ASAP
-  strip.setBrightness(255); // Set BRIGHTNESS to about 1/5 (max = 255)
+  buttStrip.begin();            // INITIALIZE NeoPixel strip object (REQUIRED)
+  buttStrip.show();             // Turn OFF all pixels ASAP
+  buttStrip.setBrightness(255); // Set BRIGHTNESS to about 1/5 (max = 255)
 
   notiStrip.begin();            // INITIALIZE NeoPixel strip object (REQUIRED)
   notiStrip.show();             // Turn OFF all pixels ASAP
@@ -132,7 +127,8 @@ void setup() {
   //four digit display thing stuff
   // uint8_t data[] = { 0xff, 0xff, 0xff, 0xff };
   uint8_t blank[] = { 0x00, 0x00, 0x00, 0x00 };
-  display.setBrightness(0x00);
+  // display.setBrightness(0x00);
+  display.setBrightness(0xFF);
  
   // All segments on
   display.setSegments(blank);
@@ -182,11 +178,11 @@ void checkButtons () {
     // Start timer one
     timerStateOne = true;
     timExpireyOne = rightMeow + timerOne;
-    // strip.setPixelColor(0,strip.Color(0, 25, 0));
+    // buttStrip.setPixelColor(0,buttStrip.Color(0, 25, 0));
   } else if (buttonStateOne == HIGH && timerAlarmOne == true) {
     //cancel timer one
-    // strip.setPixelColor(0,strip.Color(100,100,0));
-    // strip.show();
+    // buttStrip.setPixelColor(0,buttStrip.Color(100,100,0));
+    // buttStrip.show();
     timerAlarmOne = false;
     delay(500);
   }
@@ -194,11 +190,11 @@ void checkButtons () {
   if (buttonStateTwo == HIGH && timerAlarmTwo == false) {
     timerStateTwo = true;
     timExpireyTwo = rightMeow + timerTwo;
-    // strip.setPixelColor(1,strip.Color(0, 0, 25));
+    // buttStrip.setPixelColor(1,buttStrip.Color(0, 0, 25));
   } else if (buttonStateTwo == HIGH && timerAlarmTwo == true) {
     // you can reset individual alarms if they are done and multiple timers are going off.
-    // strip.setPixelColor(1,strip.Color(100,100,0));
-    // strip.show();
+    // buttStrip.setPixelColor(1,buttStrip.Color(100,100,0));
+    // buttStrip.show();
     timerAlarmTwo = false;
     delay(500);
   }
@@ -215,17 +211,17 @@ void checkButtons () {
     timerAlarmOne = false;
     timerAlarmTwo = false;
     //Timer is running or was in alarm mode: turn off button LED
-    strip.setPixelColor(0,strip.Color(0,0,0));
-    strip.setPixelColor(1,strip.Color(0,0,0));
-    strip.setPixelColor(2,strip.Color(100,100,0));
+    buttStrip.setPixelColor(0,buttStrip.Color(0,0,0));
+    buttStrip.setPixelColor(1,buttStrip.Color(0,0,0));
+    buttStrip.setPixelColor(2,buttStrip.Color(100,100,0));
     // Update the 4 digit display
     uint8_t blank[] = { 0x00, 0x00, 0x00, 0x00 };
-    display.setBrightness(0x00);
+    // display.setBrightness(0x00);
     display.setSegments(blank);
-    strip.show();
+    buttStrip.show();
   } else {
-    strip.setPixelColor(2,strip.Color(0,0,0));
-    strip.show();
+    buttStrip.setPixelColor(2,buttStrip.Color(0,0,0));
+    buttStrip.show();
   }
 }
 
@@ -248,6 +244,18 @@ void updateDisplay() {
   int newCountTwo = (timExpireyTwo - rightMeow)/1000; // (seconds) the number we should be displaying:
   //make a piecemeal display
   uint8_t blankTwo[] = { 0x00, 0x00, 0x00, 0x00 };  //for display
+
+  if (timerAlarmOne || timerAlarmTwo) {
+    display.setBrightness(0xff);
+  } else {
+    display.setBrightness(0x00);
+  }
+
+  if (timerAlarmOne && timerAlarmTwo) {  //Technically this isn't necessary...but the display doesn't work without it
+    display.showNumberDec(0,true);
+  } else if ((timerAlarmOne && ! timerStateTwo) || (timerAlarmTwo && ! timerStateOne)) {
+    display.showNumberDecEx(0, 0b01000000, true);
+  }
 
   //we have a disp hog:
   if ((timerStateOne || timerAlarmOne) != (timerStateTwo || timerAlarmTwo)){
@@ -282,9 +290,13 @@ void updateDisplay() {
         blankTwo[1] = display.encodeDigit(newCountOne / 60 % 10);
         Serial.println("'bongo'");
       }
+    } else {
+      blankTwo[0] = 0x00;
+      blankTwo[1] = 0x00;
     }
     if (timerAlarmOne) { //Timer is in alarm mode 
       //update the display
+      display.setBrightness(0xff);
       blankTwo[0] = display.encodeDigit(0);
       blankTwo[1] = display.encodeDigit(0);
     }
@@ -296,9 +308,13 @@ void updateDisplay() {
         blankTwo[2] = display.encodeDigit(newCountTwo / 600 % 10);
         blankTwo[3] = display.encodeDigit(newCountTwo / 60 % 10);
       }
+    } else {
+      blankTwo[2] = 0x00;
+      blankTwo[3] = 0x00;
     }
     if (timerAlarmTwo) { // Timer 2 is alarm state
       //update the display
+      display.setBrightness(0xff);
       blankTwo[2] = display.encodeDigit(0);
       blankTwo[3] = display.encodeDigit(0);
     }
@@ -308,21 +324,21 @@ void updateDisplay() {
 
 void updateLights() {
   // turn off button led
-  if ( ! timerStateOne && ! timerAlarmOne ) { strip.setPixelColor(0,strip.Color(0,0,0)); }
+  if ( ! timerStateOne && ! timerAlarmOne ) { buttStrip.setPixelColor(0,buttStrip.Color(0,0,0)); }
   // In progress status light
-  if (timerStateOne) {strip.setPixelColor(0,strip.Color(0,25,0));} // turn on first button
+  if (timerStateOne) {buttStrip.setPixelColor(0,buttStrip.Color(0,25,0));} // turn on first button
   // Turn off button LED
-  if (timerAlarmOne) {strip.setPixelColor(0,strip.Color(255,0,0));} // turn on first button
+  if (timerAlarmOne) {buttStrip.setPixelColor(0,buttStrip.Color(255,0,0));} // turn on first button
   // Turn off button LED
-  if ( ! timerStateTwo && ! timerAlarmTwo ) { strip.setPixelColor(1,strip.Color(0,0,0)); }
+  if ( ! timerStateTwo && ! timerAlarmTwo ) { buttStrip.setPixelColor(1,buttStrip.Color(0,0,0)); }
   // Second timer progress light
-  if (timerStateTwo) {strip.setPixelColor(1,strip.Color(0,0,25));} // turn on Second button
+  if (timerStateTwo) {buttStrip.setPixelColor(1,buttStrip.Color(0,0,25));} // turn on Second button
   //edge case where I get two cups of coffee during a laundry cycle
-  if (timerAlarmTwo) {strip.setPixelColor(1,strip.Color(255,0,0));} // turn on second button
+  if (timerAlarmTwo) {buttStrip.setPixelColor(1,buttStrip.Color(255,0,0));} // turn on second button
   //this resets brightness and alarm status for the top leds
   if ( ! timerAlarmOne && ! timerAlarmTwo) {
     // reset brightness to low
-    display.setBrightness(0x00);
+    // display.setBrightness(0);
     // Turn off the top lights
     notiStrip.setPixelColor(0,(0,0,0));
     notiStrip.setPixelColor(1,(0,0,0));
@@ -332,12 +348,12 @@ void updateLights() {
   }
   if (timerAlarmOne == true || timerAlarmTwo == true) {
     //light the top lights:
-    notiStrip.setPixelColor(0,strip.Color(255,0,0));
-    notiStrip.setPixelColor(1,strip.Color(255,0,0));
-    notiStrip.setPixelColor(2,strip.Color(255,0,0));
-    notiStrip.setPixelColor(3,strip.Color(255,0,0));
-    // notiStrip.setPixelColor(4,strip.Color(255,0,0));
-    display.setBrightness(0xff);
+    notiStrip.setPixelColor(0,buttStrip.Color(255,0,0));
+    notiStrip.setPixelColor(1,buttStrip.Color(255,0,0));
+    notiStrip.setPixelColor(2,buttStrip.Color(255,0,0));
+    notiStrip.setPixelColor(3,buttStrip.Color(255,0,0));
+    // notiStrip.setPixelColor(4,buttStrip.Color(255,0,0));
+    // display.setBrightness(0xFF);
   }
   //check wifi
   if (status == WL_CONNECTED) {
@@ -347,7 +363,7 @@ void updateLights() {
     // Serial.println("NO Internet! WTF...I'm going on without it.");
     notiStrip.setPixelColor(4,notiStrip.Color(5,0,0));
   }
-  strip.show(); 
+  buttStrip.show(); 
   notiStrip.show();
 }
 
@@ -358,20 +374,20 @@ void rainbow(int wait) {
   // just count from 0 to 5*65536. Adding 256 to firstPixelHue each time
   // means we'll make 5*65536/256 = 1280 passes through this loop:
   for(long firstPixelHue = 0; firstPixelHue < 5*65536; firstPixelHue += 256) {
-    // strip.rainbow() can take a single argument (first pixel hue) or
+    // buttStrip.rainbow() can take a single argument (first pixel hue) or
     // optionally a few extras: number of rainbow repetitions (default 1),
     // saturation and value (brightness) (both 0-255, similar to the
     // ColorHSV() function, default 255), and a true/false flag for whether
     // to apply gamma correction to provide 'truer' colors (default true).
-    strip.rainbow(firstPixelHue);
+    buttStrip.rainbow(firstPixelHue);
     notiStrip.rainbow(firstPixelHue);
     // Above line is equivalent to:
-    // strip.rainbow(firstPixelHue, 1, 255, 255, true);
-    strip.show(); // Update strip with new contents
+    // buttStrip.rainbow(firstPixelHue, 1, 255, 255, true);
+    buttStrip.show(); // Update strip with new contents
     notiStrip.show(); // Update strip with new contents
     delay(wait);  // Pause for a moment
   }
-  strip.clear();
+  buttStrip.clear();
   notiStrip.clear();
 }
 
