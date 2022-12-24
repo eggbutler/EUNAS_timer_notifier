@@ -201,7 +201,7 @@ void checkButtons () {
   //LED Test easter egg Run rainbows across all the led's
   if (buttonStateThree == HIGH && buttonStateOne == HIGH) {
     rainbow(8);
-    // getWeather();
+    getWeather(); // Testing -------------------------------------------------------------
   }
   // Cancel or reset or something
   if (buttonStateThree == HIGH) {
@@ -422,6 +422,36 @@ void getWeather() {
     line = client.readStringUntil('\n');
     Serial.println(line);
   }
+  Serial.print("Goodbye!");
+  Serial.println("...go away\n");
+}
+
+void checkWeather() {
+  Serial.println("\nStarting connection to server...");
+  // if you get a connection, report back via serial:
+  if (client.connect(server, 80)) {
+    Serial.println("connected to server");
+    // Make a HTTP request:
+    client.print("GET /data/2.5/forecast?");
+    // client.print("q="+location);
+    client.print("lat="+lat);
+    client.print("&lon="+lon);
+    client.print("&appid="+apiKey);
+    client.print("&mode=xml");
+    client.println("&cnt=2");
+    // client.println("&units=standard");
+    client.println("Host: api.openweathermap.org");
+    client.println("Connection: close");
+    client.println();
+  } else {
+    Serial.println("unable to connect");
+  }
+  delay(400);
+  String lesLines = "";
+  while (client.connected()) {
+    lesLines = client.readString();
+  }
+
   Serial.print("Goodbye!");
   Serial.println("...go away\n");
 }
