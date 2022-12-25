@@ -54,6 +54,11 @@ char server[] = "api.openweathermap.org";
 String apiKey = SECRET_APIKEY;
 String lat = "40.927227";
 String lon = "-73.966860";
+int weatherCount = 12;
+String weatherCountString = String(weatherCount);
+//jsonWeatherstuff
+#include <ArduinoJson.h>
+
 
 //Neo Pixel LED stuff
 #include <Adafruit_NeoPixel.h>
@@ -191,6 +196,7 @@ void checkButtons () {
     timerStateTwo = true;
     timExpireyTwo = rightMeow + timerTwo;
     // buttStrip.setPixelColor(1,buttStrip.Color(0, 0, 25));
+    checkWeather(lat,lon,apiKey,weatherCountString);
   } else if (buttonStateTwo == HIGH && timerAlarmTwo == true) {
     // you can reset individual alarms if they are done and multiple timers are going off.
     // buttStrip.setPixelColor(1,buttStrip.Color(100,100,0));
@@ -283,12 +289,12 @@ void updateDisplay() {
         // report last two digits
         blankTwo[0] = display.encodeDigit(newCountOne / 10 % 10);
         blankTwo[1] = display.encodeDigit(newCountOne % 10);
-        Serial.println("'bingo'");
+        // Serial.println("'bingo'");
       } else {
         //report tens of minutes and minutes
         blankTwo[0] = display.encodeDigit(newCountOne / 600 % 10);
         blankTwo[1] = display.encodeDigit(newCountOne / 60 % 10);
-        Serial.println("'bongo'");
+        // Serial.println("'bongo'");
       }
     } else {
       blankTwo[0] = 0x00;
@@ -426,32 +432,68 @@ void getWeather() {
   Serial.println("...go away\n");
 }
 
-void checkWeather() {
-  Serial.println("\nStarting connection to server...");
-  // if you get a connection, report back via serial:
-  if (client.connect(server, 80)) {
-    Serial.println("connected to server");
-    // Make a HTTP request:
-    client.print("GET /data/2.5/forecast?");
-    // client.print("q="+location);
-    client.print("lat="+lat);
-    client.print("&lon="+lon);
-    client.print("&appid="+apiKey);
-    client.print("&mode=xml");
-    client.println("&cnt=2");
-    // client.println("&units=standard");
-    client.println("Host: api.openweathermap.org");
-    client.println("Connection: close");
-    client.println();
+void checkWeather(String lat, String lon, String apiKey, String wCountS) {
+  // get some weather 
+  if (!client.connect("api.openweathermap.org", 80)) {
+    Serial.println(F("Connection failed"));
+    return;
   } else {
-    Serial.println("unable to connect");
-  }
-  delay(400);
-  String lesLines = "";
-  while (client.connected()) {
-    lesLines = client.readString();
+    Serial.println("YEPPO");
   }
 
-  Serial.print("Goodbye!");
-  Serial.println("...go away\n");
+  // Send HTTP request
+  client.print(F("GET /data/2.5/forecast?"));
+  client.print("lat="+lat);
+  client.print("&lon="+lon);
+  client.print("&appid="+apiKey);
+  client.println("&cnt="+wCountS);
+
+  client.println(F("Host: api.openweathermap.org"));
+  client.println(F("Connection: close"));
+  if (client.println() == 0) {
+    Serial.println(F("Failed to send request"));
+    client.stop();
+    return;
+  } else {
+    Serial.println("some other YEP");
+  }
+
+  String leJsonString;
+  while (client.connected()) {
+    leJsonString = client.readStringUntil('\n');
+    // Serial.println(lineOne);
+  }
+
+  // per the assistant https://arduinojson.org/v6/assistant/#/step1
+  StaticJsonDocument<48> filter;
+  filter["list"][0]["pop"] = true;
+
+  StaticJsonDocument<512> doc;
+  DeserializationError error = deserializeJson(doc, leJsonString, DeserializationOption::Filter(filter));
+
+  if (error) {
+    Serial.print("deserializeJson() failed: ");
+    Serial.println(error.c_str());
+    return;
+  }
+
+  for (JsonObject list_item : doc["list"].as<JsonArray>()) {
+    float list_item_pop = list_item["pop"]; // array of 12 floats (number of weatherCount's)
+  }
+
+  if (doc.isNull()) {
+    Serial.println("nada from the server...maybe clear weather?");
+  } else {
+    Serial.println("found a not isNull...something means something");
+  }
+
+  float popArray [weatherCount];  // make an array of floats for the precip percentage numbers
+  for (int i = 0; i < (weatherCount-1); i++) {
+    popArray[i]=doc["list"][i]["pop"];
+    String testMessage = doc["list"][i]["pop"];
+    Serial.println(testMessage);
+  }
+
+  client.stop();
+
 }
