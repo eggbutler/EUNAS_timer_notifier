@@ -29,7 +29,7 @@
   Twitch
 */
 
-const bool testMode = false;
+const bool testMode = false;  //set the timers to a few seconds.
 
 //4 digit display
 #include <TM1637Display.h>
@@ -52,13 +52,18 @@ char pass[] = SECRET_PASS;//  your network PASSWORD ()
 char server[] = "api.openweathermap.org";
 //open weather map api key
 String apiKey = SECRET_APIKEY;
-String lat = "40.927227";
-String lon = "-73.966860";
+String lat = SECRET_LAT; 
+String lon = SECRET_LON; 
 int weatherCount = 12;
 String weatherCountString = String(weatherCount);
 //jsonWeatherstuff
 #include <ArduinoJson.h>
-
+bool weatherWarning = false;
+bool weatherAlarm = false;
+// Schedule vars
+unsigned long weatherCheck;  // millis
+// unsigned long weatherFreq = 5000;  // test
+unsigned long weatherFreq = 3600000;  // one hour for realz
 
 //Neo Pixel LED stuff
 #include <Adafruit_NeoPixel.h>
@@ -99,6 +104,7 @@ bool timerAlarmTwo = false;
 unsigned long timExpireyOne;
 unsigned long timExpireyTwo;
 unsigned long rightMeow;
+
 
 void setup() {
 
@@ -144,16 +150,17 @@ void setup() {
   status = WiFi.begin(ssid, pass);
   if (status == WL_CONNECTED) {
     Serial.println("crazy it worked!");
-    notiStrip.setPixelColor(4,notiStrip.Color(0,5,0));
+    // notiStrip.setPixelColor(4,notiStrip.Color(0,5,0));
   } else {
     status = WiFi.begin(ssid,pass);
     Serial.println("No Internet! WTF...I'm going on without it.");
-    notiStrip.setPixelColor(4,notiStrip.Color(5,0,0));
+    // notiStrip.setPixelColor(4,notiStrip.Color(5,0,0));
   }
   notiStrip.show();
 
   //when will then be now?
-  rightMeow = millis();
+  rightMeow = millis();  // timers
+  weatherCheck = millis();  // Weather check
 }
 
 void loop() {
@@ -169,9 +176,11 @@ void loop() {
 
   updateLights();
 
+  checkSchedule();
+
 }
 
-void checkButtons () {
+void checkButtons () {  // Read the buttons and do something
 
   //read the buttons
   buttonStateOne = digitalRead(buttonPinOne);
@@ -196,7 +205,7 @@ void checkButtons () {
     timerStateTwo = true;
     timExpireyTwo = rightMeow + timerTwo;
     // buttStrip.setPixelColor(1,buttStrip.Color(0, 0, 25));
-    checkWeather(lat,lon,apiKey,weatherCountString);
+    // checkWeather(lat,lon,apiKey,weatherCountString); // Testing -------------------------------------------------------------
   } else if (buttonStateTwo == HIGH && timerAlarmTwo == true) {
     // you can reset individual alarms if they are done and multiple timers are going off.
     // buttStrip.setPixelColor(1,buttStrip.Color(100,100,0));
@@ -207,7 +216,7 @@ void checkButtons () {
   //LED Test easter egg Run rainbows across all the led's
   if (buttonStateThree == HIGH && buttonStateOne == HIGH) {
     rainbow(8);
-    getWeather(); // Testing -------------------------------------------------------------
+    // getWeather(); // Testing -------------------------------------------------------------
   }
   // Cancel or reset or something
   if (buttonStateThree == HIGH) {
@@ -231,7 +240,7 @@ void checkButtons () {
   }
 }
 
-void checkAlarms () {
+void checkAlarms () {  // check if we're over any timer alarms
   // int newCount = 0; //the number we should be displaying:
   // We just passed the timer threshold.
   if (timerStateOne == true && timExpireyOne < rightMeow) { 
@@ -245,7 +254,7 @@ void checkAlarms () {
   }
 }
 
-void updateDisplay() {
+void updateDisplay() {  // check the status of the timers and update the display
   int newCountOne = (timExpireyOne - rightMeow)/1000; // (seconds) the number we should be displaying:
   int newCountTwo = (timExpireyTwo - rightMeow)/1000; // (seconds) the number we should be displaying:
   //make a piecemeal display
@@ -328,7 +337,7 @@ void updateDisplay() {
   }
 }
 
-void updateLights() {
+void updateLights() {  // look at the states and update the button LED's and the notification LED's
   // turn off button led
   if ( ! timerStateOne && ! timerAlarmOne ) { buttStrip.setPixelColor(0,buttStrip.Color(0,0,0)); }
   // In progress status light
@@ -361,20 +370,23 @@ void updateLights() {
     // notiStrip.setPixelColor(4,buttStrip.Color(255,0,0));
     // display.setBrightness(0xFF);
   }
-  //check wifi
-  if (status == WL_CONNECTED) {
-    // Serial.println("crazy it worked!");
-    notiStrip.setPixelColor(4,notiStrip.Color(0,5,0));
-  } else {
-    // Serial.println("NO Internet! WTF...I'm going on without it.");
+  //check wifi/weather
+  if (status != WL_CONNECTED) {
+    Serial.println("NO Internet! WTF...I'm going on without it.");
     notiStrip.setPixelColor(4,notiStrip.Color(5,0,0));
+  } else if (weatherAlarm) {
+    Serial.println("le weather alarm");
+    notiStrip.setPixelColor(4,notiStrip.Color(0,0,5));
+  } else if (weatherWarning) {
+    Serial.println("le weather warning");
+    notiStrip.setPixelColor(4,notiStrip.Color(0,5,0));
   }
   buttStrip.show(); 
   notiStrip.show();
 }
 
 // Rainbow cycle along whole strip. Pass delay time (in ms) between frames.
-void rainbow(int wait) {
+void rainbow(int wait) {  // just a test loop for testing and lulz
   // Hue of first pixel runs 5 complete loops through the color wheel.
   // Color wheel has a range of 65536 but it's OK if we roll over, so
   // just count from 0 to 5*65536. Adding 256 to firstPixelHue each time
@@ -397,7 +409,7 @@ void rainbow(int wait) {
   notiStrip.clear();
 }
 
-void getWeather() {
+void getWeather() {  // testing print serverResponse
   Serial.println("\nStarting connection to server...");
   // if you get a connection, report back via serial:
   if (client.connect(server, 80)) {
@@ -432,7 +444,7 @@ void getWeather() {
   Serial.println("...go away\n");
 }
 
-void checkWeather(String lat, String lon, String apiKey, String wCountS) {
+void checkWeather(String lat, String lon, String apiKey, String wCountS) {  // strip out the precipitation data.
   // get some weather 
   if (!client.connect("api.openweathermap.org", 80)) {
     Serial.println(F("Connection failed"));
@@ -490,10 +502,27 @@ void checkWeather(String lat, String lon, String apiKey, String wCountS) {
   float popArray [weatherCount];  // make an array of floats for the precip percentage numbers
   for (int i = 0; i < (weatherCount-1); i++) {
     popArray[i]=doc["list"][i]["pop"];
-    String testMessage = doc["list"][i]["pop"];
-    Serial.println(testMessage);
+    if (doc["list"][i]["pop"]>0.5){
+      weatherWarning = true; //  if anything is better than half chances for rain, I want a warning
+    }
+    String testMessage = doc["list"][i]["pop"];  // test
+    Serial.println(testMessage);  // test
+  }
+  for (int i = 0; i < 3; i++) {  // check if the first three are above 0.5...if so...stuff.
+    if (popArray[i] > 0.5) {
+      weatherAlarm = true;
+    }
   }
 
   client.stop();
 
+}
+
+void checkSchedule(){
+  unsigned long newRightMeow = millis();
+  if (weatherCheck < newRightMeow) {
+    Serial.println("do a weather check");
+    checkWeather(lat,lon,apiKey,weatherCountString);
+    weatherCheck = weatherCheck + weatherFreq;
+  }
 }
