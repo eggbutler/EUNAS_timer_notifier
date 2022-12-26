@@ -49,7 +49,7 @@ char ssid[] = SECRET_SSID; //  your network SSID (name)
 char pass[] = SECRET_PASS;//  your network PASSWORD ()
 
 //weather stuff
-char server[] = "api.openweathermap.org";
+char weatherServer[] = "api.openweathermap.org";
 //open weather map api key
 String apiKey = SECRET_APIKEY;
 String lat = "40.927227";
@@ -201,10 +201,11 @@ void checkButtons () {
   //LED Test easter egg Run rainbows across all the led's
   if (buttonStateThree == HIGH && buttonStateOne == HIGH) {
     rainbow(8);
-    // getWeather();
+    // getWeather(); // -----------------Testing-------------------------------------
   }
   // Cancel or reset or something
   if (buttonStateThree == HIGH) {
+    // checkStrimmers(); // -----------------Testing-------------------------------------
     // Reset the states and alarms.
     timerStateOne = false;
     timerStateTwo = false;
@@ -394,7 +395,7 @@ void rainbow(int wait) {
 void getWeather() {
   Serial.println("\nStarting connection to server...");
   // if you get a connection, report back via serial:
-  if (client.connect(server, 80)) {
+  if (client.connect(weatherServer, 80)) {
     Serial.println("connected to server");
     // Make a HTTP request:
     client.print("GET /data/2.5/forecast?");
@@ -425,3 +426,50 @@ void getWeather() {
   Serial.print("Goodbye!");
   Serial.println("...go away\n");
 }
+
+void checkStrimmers() {
+  char twitchServer[] = "www.twitch.tv";
+  Serial.println("\nbugging Twitch...");
+  // if you get a connection, report back via serial:
+  if (client.connect(twitchServer,8080)) {
+    Serial.println("connected to server");
+    // Make a HTTP request:
+    client.println("GET /voxy HTTP/1.1");
+    // client.print("q="+location);
+    // client.print("lat="+lat);
+    // client.print("&lon="+lon);
+    // client.print("&appid="+apiKey);
+    // client.print("&mode=xml");
+    // client.println("&cnt=2");
+    // client.println("&units=standard");
+    client.println("Host: www.twitch.tv");
+    client.println("Connection: close");
+    client.println();
+  } else {
+    Serial.println("unable to connect");
+  }
+
+  char searchNugget[] = "isLiveBroadcast";
+  delay(1000);
+  String line = "";
+  while (client.connected()) {
+    if (client.find(searchNugget)) {
+      Serial.println("found a voxy");
+    } else {
+      Serial.println("voxyless");
+    }
+  }
+  Serial.println("Goodbye!");
+  Serial.println("...go away\n");
+}
+
+// void fakeStrim () {
+//   const fetch = require('node-fetch');
+//   const channelName = '39daph';
+
+//   let a = await fetch('https://www.twitch.tv/${channelName}');
+//   if( (await a.text()).includes('isLiveBroadcast') )
+//       Serial.println('${channelName} is live');
+//   else
+//       Serial.println('${channelName} is not live');
+// }
