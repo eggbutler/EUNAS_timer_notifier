@@ -166,6 +166,7 @@ void setup() {
   funCheck = millis();  // Fun check
 }
 
+
 void loop() {
 
   //when will then be now?
@@ -180,8 +181,8 @@ void loop() {
 
   updateLights();
 
-
 }
+
 
 void checkButtons () {  // Read the buttons and do something
 
@@ -218,9 +219,9 @@ void checkButtons () {  // Read the buttons and do something
   }
   //LED Test easter egg Run rainbows across all the led's
   if (buttonStateThree == HIGH && buttonStateOne == HIGH) {
+    checkWeather(lat,lon,apiKey,weatherCountString); // Testing ------------------------------------
     rainbow(8);
     // getWeather(); // Testing -----------------------------------------------------------------------
-    // checkWeather(lat,lon,apiKey,weatherCountString); // Testing ------------------------------------
   }
   // Cancel or reset or something
   if (buttonStateThree == HIGH) {
@@ -243,6 +244,7 @@ void checkButtons () {  // Read the buttons and do something
     buttStrip.show();
   }
 }
+
 
 void checkSchedule(){ //check if we are over any timers or scheduled events.
   //check if we need to do the weather or other long term stuff.
@@ -356,6 +358,7 @@ void updateDisplay() {  // check the status of the timers and update the display
   }
 }
 
+
 void updateLights() {  // look at the states and update the button LED's and the notification LED's
   // turn off button led
   if ( ! timerStateOne && ! timerAlarmOne ) { buttStrip.setPixelColor(0,buttStrip.Color(0,0,0)); }
@@ -404,6 +407,7 @@ void updateLights() {  // look at the states and update the button LED's and the
   notiStrip.show();
 }
 
+
 // Rainbow cycle along whole strip. Pass delay time (in ms) between frames.
 void rainbow(int wait) {  // just a test loop for testing and lulz
   // Hue of first pixel runs 5 complete loops through the color wheel.
@@ -427,6 +431,7 @@ void rainbow(int wait) {  // just a test loop for testing and lulz
   buttStrip.clear();
   notiStrip.clear();
 }
+
 
 void checkWeather(String lat, String lon, String apiKey, String wCountS) {  // strip out the precipitation data.
   // get some weather 
