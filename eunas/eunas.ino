@@ -104,6 +104,8 @@ bool timerAlarmTwo = false;
 unsigned long timExpireyOne;
 unsigned long timExpireyTwo;
 unsigned long rightMeow;
+unsigned long funCheck; // test timer for chirping at the serial port.
+unsigned long funFreq = 600000; // test timer for chirping at the serial port.
 
 
 void setup() {
@@ -161,6 +163,7 @@ void setup() {
   //when will then be now?
   rightMeow = millis();  // timers
   weatherCheck = millis();  // Weather check
+  funCheck = millis();  // Fun check
 }
 
 void loop() {
@@ -248,6 +251,14 @@ void checkSchedule(){ //check if we are over any timers or scheduled events.
     Serial.println("do a weather check");
     checkWeather(lat,lon,apiKey,weatherCountString);
     weatherCheck = weatherCheck + weatherFreq;
+  }
+  if (funCheck < newRightMeow) {
+    Serial.println("Are we having fun yet?");
+    Serial.println(newRightMeow);
+    // checkWeather(lat,lon,apiKey,weatherCountString);
+    // weatherCheck = weatherCheck + weatherFreq;
+    funCheck = funCheck + funFreq;
+  }
   // int newCount = 0; //the number we should be displaying:
   // We just passed a timer threshold.
   if (timerStateOne == true && timExpireyOne < rightMeow) { 
@@ -258,7 +269,6 @@ void checkSchedule(){ //check if we are over any timers or scheduled events.
   if (timerStateTwo == true && timExpireyTwo < rightMeow) { 
     timerAlarmTwo = true;
     timerStateTwo = false;
-  }
   }
 }
 
@@ -418,41 +428,6 @@ void rainbow(int wait) {  // just a test loop for testing and lulz
   notiStrip.clear();
 }
 
-void getWeather() {  // testing print serverResponse
-  Serial.println("\nStarting connection to server...");
-  // if you get a connection, report back via serial:
-  if (client.connect(server, 80)) {
-    Serial.println("connected to server");
-    // Make a HTTP request:
-    client.print("GET /data/2.5/forecast?");
-    // client.print("q="+location);
-    client.print("lat="+lat);
-    client.print("&lon="+lon);
-    client.print("&appid="+apiKey);
-    client.print("&mode=xml");
-    client.println("&cnt=2");
-    // client.println("&units=standard");
-    client.println("Host: api.openweathermap.org");
-    client.println("Connection: close");
-    client.println();
-  } else {
-    Serial.println("unable to connect");
-  }
-
-  delay(1000);
-  String line = "";
-  while (client.connected()) {
-    line = client.readStringUntil('\n');
-    Serial.println(line);
-    line = client.readStringUntil('\n');
-    Serial.println(line);
-    line = client.readStringUntil('\n');
-    Serial.println(line);
-  }
-  Serial.print("Goodbye!");
-  Serial.println("...go away\n");
-}
-
 void checkWeather(String lat, String lon, String apiKey, String wCountS) {  // strip out the precipitation data.
   // get some weather 
   if (!client.connect("api.openweathermap.org", 80)) {
@@ -503,9 +478,9 @@ void checkWeather(String lat, String lon, String apiKey, String wCountS) {  // s
   }
 
   if (doc.isNull()) {
-    Serial.println("nada from the server...maybe clear weather?");
+    Serial.println("nada from the weather server...maybe clear weather?");
   } else {
-    Serial.println("found a not isNull...something means something");
+    Serial.println("found a not isNull...Weather responded.");
   }
 
   float popArray [weatherCount];  // make an array of floats for the precip percentage numbers
@@ -514,14 +489,15 @@ void checkWeather(String lat, String lon, String apiKey, String wCountS) {  // s
     if (doc["list"][i]["pop"]>0.5){
       weatherWarning = true; //  if anything is better than half chances for rain, I want a warning
     }
-    String testMessage = doc["list"][i]["pop"];  // test
-    Serial.println(testMessage);  // test
+    // String testMessage = doc["list"][i]["pop"];  // ---test
+    // Serial.println(testMessage);  // ------------------test
   }
   for (int i = 0; i < 3; i++) {  // check if the first three are above 0.5...if so...stuff.
     if (popArray[i] > 0.5) {
       weatherAlarm = true;
     }
   }
+  Serial.println("json deserialized!...I hope.");
 
   client.stop();
 
