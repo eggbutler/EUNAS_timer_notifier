@@ -90,7 +90,7 @@ int buttonStateThree = 0;  // variable for reading the pushbutton status
 const int buttonPinOne = 9;  // the number of the first button
 const int buttonPinTwo = 10;  // the number of the second button
 const int buttonPinThree = 11;  // the number of the third button
-const int ledPin = 13;    // the number of the SMD LED pin
+const int ledPin = 13;    // the number of the SMD LED pin (blink.ino)
 
 // timer vars
 long timerOne = 240000; //length of timer one
@@ -170,13 +170,13 @@ void loop() {
 
   checkButtons();
 
-  checkAlarms();
+  checkSchedule();
+  // checkAlarms();
 
   updateDisplay();
 
   updateLights();
 
-  checkSchedule();
 
 }
 
@@ -205,7 +205,7 @@ void checkButtons () {  // Read the buttons and do something
     timerStateTwo = true;
     timExpireyTwo = rightMeow + timerTwo;
     // buttStrip.setPixelColor(1,buttStrip.Color(0, 0, 25));
-    // checkWeather(lat,lon,apiKey,weatherCountString); // Testing -------------------------------------------------------------
+    // checkWeather(lat,lon,apiKey,weatherCountString); // Testing ------------------------------------
   } else if (buttonStateTwo == HIGH && timerAlarmTwo == true) {
     // you can reset individual alarms if they are done and multiple timers are going off.
     // buttStrip.setPixelColor(1,buttStrip.Color(100,100,0));
@@ -216,7 +216,8 @@ void checkButtons () {  // Read the buttons and do something
   //LED Test easter egg Run rainbows across all the led's
   if (buttonStateThree == HIGH && buttonStateOne == HIGH) {
     rainbow(8);
-    // getWeather(); // Testing -------------------------------------------------------------
+    // getWeather(); // Testing -----------------------------------------------------------------------
+    // checkWeather(lat,lon,apiKey,weatherCountString); // Testing ------------------------------------
   }
   // Cancel or reset or something
   if (buttonStateThree == HIGH) {
@@ -240,9 +241,15 @@ void checkButtons () {  // Read the buttons and do something
   }
 }
 
-void checkAlarms () {  // check if we're over any timer alarms
+void checkSchedule(){ //check if we are over any timers or scheduled events.
+  //check if we need to do the weather or other long term stuff.
+  unsigned long newRightMeow = millis();
+  if (weatherCheck < newRightMeow) {
+    Serial.println("do a weather check");
+    checkWeather(lat,lon,apiKey,weatherCountString);
+    weatherCheck = weatherCheck + weatherFreq;
   // int newCount = 0; //the number we should be displaying:
-  // We just passed the timer threshold.
+  // We just passed a timer threshold.
   if (timerStateOne == true && timExpireyOne < rightMeow) { 
     timerAlarmOne = true;
     timerStateOne = false;
@@ -252,7 +259,9 @@ void checkAlarms () {  // check if we're over any timer alarms
     timerAlarmTwo = true;
     timerStateTwo = false;
   }
+  }
 }
+
 
 void updateDisplay() {  // check the status of the timers and update the display
   int newCountOne = (timExpireyOne - rightMeow)/1000; // (seconds) the number we should be displaying:
@@ -518,11 +527,3 @@ void checkWeather(String lat, String lon, String apiKey, String wCountS) {  // s
 
 }
 
-void checkSchedule(){
-  unsigned long newRightMeow = millis();
-  if (weatherCheck < newRightMeow) {
-    Serial.println("do a weather check");
-    checkWeather(lat,lon,apiKey,weatherCountString);
-    weatherCheck = weatherCheck + weatherFreq;
-  }
-}
