@@ -40,7 +40,7 @@ const bool testMode = false;  //set the timers to a few seconds.
 TM1637Display display(CLK, DIO);
 
 //Wifi
-// #include <SPI.h>
+#include <SPI.h>
 #include <WiFi101.h>
 #include "arduino_secrets.h"
 int status = WL_IDLE_STATUS;
@@ -532,10 +532,10 @@ void checkStrimmers() {
   char twitchServer[] = "www.twitch.tv";
   Serial.println("\nbugging Twitch...");
   // if you get a connection, report back via serial:
-  if (client.connect(twitchServer,8080)) {
+  if (client.connect(twitchServer,443)) {
     Serial.println("connected to server");
     // Make a HTTP request:
-    client.println("GET /voxy HTTP/1.1");
+    client.println("GET /ange HTTP/1.1");
     // client.print("q="+location);
     // client.print("lat="+lat);
     // client.print("&lon="+lon);
@@ -549,11 +549,25 @@ void checkStrimmers() {
   } else {
     Serial.println("unable to connect");
   }
-
+  String lineOne;
+  String lineTwo;
+  while (client.connected()) {
+    // String leString;
+    // lesChars[] = client.readString();
+    lineOne = client.readStringUntil('\n');
+    Serial.println(lineOne);
+    lineTwo = client.readStringUntil('\n');
+    Serial.println(lineTwo);
+    // leString = lineOne + lineTwo;
+    // client.readStringUntil('\n');
+  }
+  // Serial.println(lineOne);
+  // Serial.println(lineTwo);
+  // Serial.println(lineOne);
   char searchNugget[] = "isLiveBroadcast";
   delay(1000);
   String line = "";
-  while (client.connected()) {
+  if (client.connected()) {
     if (client.find(searchNugget)) {
       Serial.println("found a voxy");
     } else {
