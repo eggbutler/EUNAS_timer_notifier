@@ -107,6 +107,8 @@ unsigned long rightMeow;
 unsigned long funCheck; // test timer for chirping at the serial port.
 unsigned long funFreq = 600000; // test timer for chirping at the serial port.
 
+// Coffee Timer vars:
+
 
 void setup() {
 
@@ -155,7 +157,7 @@ void setup() {
     // notiStrip.setPixelColor(4,notiStrip.Color(0,5,0));
   } else {
     status = WiFi.begin(ssid,pass);
-    Serial.println("No Internet! WTF...I'm going on without it.");
+    // Serial.println("No Internet! WTF...I'm going on without it."); // ---------Test --------
     // notiStrip.setPixelColor(4,notiStrip.Color(5,0,0));
   }
   notiStrip.show();
@@ -246,7 +248,7 @@ void checkButtons () {  // Read the buttons and do something
 }
 
 
-void checkSchedule(){ //check if we are over any timers or scheduled events.
+void checkSchedule() { //check if we are over any timers or scheduled events.
   //check if we need to do the weather or other long term stuff.
   unsigned long newRightMeow = millis();
   if (weatherCheck < newRightMeow) {
