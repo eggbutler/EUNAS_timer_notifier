@@ -23,9 +23,9 @@
   strip of 3 neo pixels for the buttons
   wifi
   github
+  weather
 
   todo:
-  weather-sorta  (Still missing XML parsing and logic.)
   Twitch
 */
 
