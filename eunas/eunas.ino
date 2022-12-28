@@ -23,9 +23,9 @@
   strip of 3 neo pixels for the buttons
   wifi
   github
+  weather
 
   todo:
-  weather-sorta  (Still missing XML parsing and logic.)
   Twitch
 */
 
@@ -90,7 +90,7 @@ int buttonStateThree = 0;  // variable for reading the pushbutton status
 const int buttonPinOne = 9;  // the number of the first button
 const int buttonPinTwo = 10;  // the number of the second button
 const int buttonPinThree = 11;  // the number of the third button
-const int ledPin = 13;    // the number of the SMD LED pin
+const int ledPin = 13;    // the number of the SMD LED pin (blink.ino)
 
 // timer vars
 long timerOne = 240000; //length of timer one
@@ -104,6 +104,10 @@ bool timerAlarmTwo = false;
 unsigned long timExpireyOne;
 unsigned long timExpireyTwo;
 unsigned long rightMeow;
+unsigned long funCheck; // test timer for chirping at the serial port.
+unsigned long funFreq = 600000; // test timer for chirping at the serial port.
+
+// Coffee Timer vars:
 
 
 void setup() {
@@ -153,7 +157,7 @@ void setup() {
     // notiStrip.setPixelColor(4,notiStrip.Color(0,5,0));
   } else {
     status = WiFi.begin(ssid,pass);
-    Serial.println("No Internet! WTF...I'm going on without it.");
+    // Serial.println("No Internet! WTF...I'm going on without it."); // ---------Test --------
     // notiStrip.setPixelColor(4,notiStrip.Color(5,0,0));
   }
   notiStrip.show();
@@ -161,7 +165,9 @@ void setup() {
   //when will then be now?
   rightMeow = millis();  // timers
   weatherCheck = millis();  // Weather check
+  funCheck = millis();  // Fun check
 }
+
 
 void loop() {
 
@@ -170,15 +176,15 @@ void loop() {
 
   checkButtons();
 
-  checkAlarms();
+  checkSchedule();
+  // checkAlarms();
 
   updateDisplay();
 
   updateLights();
 
-  checkSchedule();
-
 }
+
 
 void checkButtons () {  // Read the buttons and do something
 
@@ -205,7 +211,7 @@ void checkButtons () {  // Read the buttons and do something
     timerStateTwo = true;
     timExpireyTwo = rightMeow + timerTwo;
     // buttStrip.setPixelColor(1,buttStrip.Color(0, 0, 25));
-    // checkWeather(lat,lon,apiKey,weatherCountString); // Testing -------------------------------------------------------------
+    // checkWeather(lat,lon,apiKey,weatherCountString); // Testing ------------------------------------
   } else if (buttonStateTwo == HIGH && timerAlarmTwo == true) {
     // you can reset individual alarms if they are done and multiple timers are going off.
     // buttStrip.setPixelColor(1,buttStrip.Color(100,100,0));
@@ -215,8 +221,9 @@ void checkButtons () {  // Read the buttons and do something
   }
   //LED Test easter egg Run rainbows across all the led's
   if (buttonStateThree == HIGH && buttonStateOne == HIGH) {
+    checkWeather(lat,lon,apiKey,weatherCountString); // Testing ------------------------------------
     rainbow(8);
-    // getWeather(); // -----------------Testing-------------------------------------
+    // getWeather(); // Testing -----------------------------------------------------------------------
   }
   // Cancel or reset or something
   if (buttonStateThree == HIGH) {
@@ -241,9 +248,24 @@ void checkButtons () {  // Read the buttons and do something
   }
 }
 
-void checkAlarms () {  // check if we're over any timer alarms
+
+void checkSchedule() { //check if we are over any timers or scheduled events.
+  //check if we need to do the weather or other long term stuff.
+  unsigned long newRightMeow = millis();
+  if (weatherCheck < newRightMeow) {
+    Serial.println("do a weather check");
+    checkWeather(lat,lon,apiKey,weatherCountString);
+    weatherCheck = weatherCheck + weatherFreq;
+  }
+  if (funCheck < newRightMeow) {
+    Serial.println("Are we having fun yet?");
+    Serial.println(newRightMeow);
+    // checkWeather(lat,lon,apiKey,weatherCountString);
+    // weatherCheck = weatherCheck + weatherFreq;
+    funCheck = funCheck + funFreq;
+  }
   // int newCount = 0; //the number we should be displaying:
-  // We just passed the timer threshold.
+  // We just passed a timer threshold.
   if (timerStateOne == true && timExpireyOne < rightMeow) { 
     timerAlarmOne = true;
     timerStateOne = false;
@@ -254,6 +276,7 @@ void checkAlarms () {  // check if we're over any timer alarms
     timerStateTwo = false;
   }
 }
+
 
 void updateDisplay() {  // check the status of the timers and update the display
   int newCountOne = (timExpireyOne - rightMeow)/1000; // (seconds) the number we should be displaying:
@@ -338,6 +361,7 @@ void updateDisplay() {  // check the status of the timers and update the display
   }
 }
 
+
 void updateLights() {  // look at the states and update the button LED's and the notification LED's
   // turn off button led
   if ( ! timerStateOne && ! timerAlarmOne ) { buttStrip.setPixelColor(0,buttStrip.Color(0,0,0)); }
@@ -386,6 +410,7 @@ void updateLights() {  // look at the states and update the button LED's and the
   notiStrip.show();
 }
 
+
 // Rainbow cycle along whole strip. Pass delay time (in ms) between frames.
 void rainbow(int wait) {  // just a test loop for testing and lulz
   // Hue of first pixel runs 5 complete loops through the color wheel.
@@ -410,40 +435,6 @@ void rainbow(int wait) {  // just a test loop for testing and lulz
   notiStrip.clear();
 }
 
-void getWeather() {  // testing print serverResponse
-  Serial.println("\nStarting connection to server...");
-  // if you get a connection, report back via serial:
-  if (client.connect(weatherServer, 80)) {
-    Serial.println("connected to server");
-    // Make a HTTP request:
-    client.print("GET /data/2.5/forecast?");
-    // client.print("q="+location);
-    client.print("lat="+lat);
-    client.print("&lon="+lon);
-    client.print("&appid="+apiKey);
-    client.print("&mode=xml");
-    client.println("&cnt=2");
-    // client.println("&units=standard");
-    client.println("Host: api.openweathermap.org");
-    client.println("Connection: close");
-    client.println();
-  } else {
-    Serial.println("unable to connect");
-  }
-
-  delay(1000);
-  String line = "";
-  while (client.connected()) {
-    line = client.readStringUntil('\n');
-    Serial.println(line);
-    line = client.readStringUntil('\n');
-    Serial.println(line);
-    line = client.readStringUntil('\n');
-    Serial.println(line);
-  }
-  Serial.print("Goodbye!");
-  Serial.println("...go away\n");
-}
 
 void checkWeather(String lat, String lon, String apiKey, String wCountS) {  // strip out the precipitation data.
   // get some weather 
@@ -495,9 +486,9 @@ void checkWeather(String lat, String lon, String apiKey, String wCountS) {  // s
   }
 
   if (doc.isNull()) {
-    Serial.println("nada from the server...maybe clear weather?");
+    Serial.println("nada from the weather server...maybe clear weather?");
   } else {
-    Serial.println("found a not isNull...something means something");
+    Serial.println("found a not isNull...Weather responded.");
   }
 
   float popArray [weatherCount];  // make an array of floats for the precip percentage numbers
@@ -506,85 +497,17 @@ void checkWeather(String lat, String lon, String apiKey, String wCountS) {  // s
     if (doc["list"][i]["pop"]>0.5){
       weatherWarning = true; //  if anything is better than half chances for rain, I want a warning
     }
-    String testMessage = doc["list"][i]["pop"];  // test
-    Serial.println(testMessage);  // test
+    // String testMessage = doc["list"][i]["pop"];  // ---test
+    // Serial.println(testMessage);  // ------------------test
   }
   for (int i = 0; i < 3; i++) {  // check if the first three are above 0.5...if so...stuff.
     if (popArray[i] > 0.5) {
       weatherAlarm = true;
     }
   }
+  Serial.println("json deserialized!...I hope.");
 
   client.stop();
 
 }
 
-void checkSchedule(){
-  unsigned long newRightMeow = millis();
-  if (weatherCheck < newRightMeow) {
-    Serial.println("do a weather check");
-    checkWeather(lat,lon,apiKey,weatherCountString);
-    weatherCheck = weatherCheck + weatherFreq;
-  }
-}
-
-void checkStrimmers() {
-  char twitchServer[] = "www.twitch.tv";
-  Serial.println("\nbugging Twitch...");
-  // if you get a connection, report back via serial:
-  if (client.connect(twitchServer,443)) {
-    Serial.println("connected to server");
-    // Make a HTTP request:
-    client.println("GET /ange HTTP/1.1");
-    // client.print("q="+location);
-    // client.print("lat="+lat);
-    // client.print("&lon="+lon);
-    // client.print("&appid="+apiKey);
-    // client.print("&mode=xml");
-    // client.println("&cnt=2");
-    // client.println("&units=standard");
-    client.println("Host: www.twitch.tv");
-    client.println("Connection: close");
-    client.println();
-  } else {
-    Serial.println("unable to connect");
-  }
-  String lineOne;
-  String lineTwo;
-  while (client.connected()) {
-    // String leString;
-    // lesChars[] = client.readString();
-    lineOne = client.readStringUntil('\n');
-    Serial.println(lineOne);
-    lineTwo = client.readStringUntil('\n');
-    Serial.println(lineTwo);
-    // leString = lineOne + lineTwo;
-    // client.readStringUntil('\n');
-  }
-  // Serial.println(lineOne);
-  // Serial.println(lineTwo);
-  // Serial.println(lineOne);
-  char searchNugget[] = "isLiveBroadcast";
-  delay(1000);
-  String line = "";
-  if (client.connected()) {
-    if (client.find(searchNugget)) {
-      Serial.println("found a voxy");
-    } else {
-      Serial.println("voxyless");
-    }
-  }
-  Serial.println("Goodbye!");
-  Serial.println("...go away\n");
-}
-
-// void fakeStrim () {
-//   const fetch = require('node-fetch');
-//   const channelName = '39daph';
-
-//   let a = await fetch('https://www.twitch.tv/${channelName}');
-//   if( (await a.text()).includes('isLiveBroadcast') )
-//       Serial.println('${channelName} is live');
-//   else
-//       Serial.println('${channelName} is not live');
-// }

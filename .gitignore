@@ -1,5 +1,6 @@
 #DDC crap
 arduino_secrets.h
+.vscode/*
 
 # Prerequisites
 *.d
