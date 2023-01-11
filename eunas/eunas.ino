@@ -27,6 +27,20 @@
 
   todo:
   Twitch
+    wow it's achully really hard.  
+    
+    I'm pretty sure that my https get calls are missing root certs and the 
+    arduino flasher is borked for the feather: 
+    "Can't find board with adafruit:samd:adafruit_feather_m0 fbnq"???
+    ...
+    Then the WebSocket server and client relationship is way too big for 
+    testing "isLive" 
+    ...
+    The last thing that (I can think of that) prolly works is to send in simple 
+    api requests authed via a stored access token.  smol ... and added to a timer.
+      
+
+
 */
 
 const bool testMode = false;  //set the timers to a few seconds.
@@ -399,11 +413,14 @@ void updateLights() {  // look at the states and update the button LED's and the
     Serial.println("NO Internet! WTF...I'm going on without it.");
     notiStrip.setPixelColor(4,notiStrip.Color(5,0,0));
   } else if (weatherAlarm) {
-    Serial.println("le weather alarm");
+    // Serial.println("le weather alarm");
     notiStrip.setPixelColor(4,notiStrip.Color(0,0,5));
   } else if (weatherWarning) {
-    Serial.println("le weather warning");
+    // Serial.println("le weather warning");
     notiStrip.setPixelColor(4,notiStrip.Color(0,5,0));
+  } else {
+    // Serial.println("bueno weather");
+    notiStrip.setPixelColor(4,notiStrip.Color(0,0,0));
   }
   buttStrip.show(); 
   notiStrip.show();
